@@ -1,0 +1,16 @@
+[run]
+branch = True
+source =
+    gordon_janitor_gcp
+
+[paths]
+source =
+   gordon_janitor_gcp
+   .tox/*/lib/python*/site-packages/gordon_janitor_gcp
+   .tox/pypy/site-packages/gordon_janitor_gcp
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
