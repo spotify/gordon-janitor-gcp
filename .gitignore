@@ -58,3 +58,6 @@ docs/_build/
 
 # Service-specific configuration
 gordon-janitor*.toml
+
+# pytest
+.pytest_cache/
