@@ -103,6 +103,10 @@ pygments_style = 'sphinx'
 todo_include_todos = True
 
 
+# Autodoc extention configuration
+autodoc_member_order = 'bysource'  # not sure why this doesn't work?
+autodoc_default_flags = ['members']
+
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
