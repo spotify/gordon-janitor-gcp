@@ -59,3 +59,34 @@ def mock_credentials(mocker, monkeypatch):
     patch = 'gordon_janitor_gcp.http_client.service_account.Credentials'
     monkeypatch.setattr(patch, mock_creds)
     return mock_creds
+
+
+@pytest.fixture
+def fake_response_data():
+    return {
+        'rrsets': [
+            {
+                'name': 'a-test.example.net.',
+                'type': 'A',
+                'ttl': 300,
+                'rrdatas': [
+                    '10.1.2.3',
+                ]
+            }, {
+                'name': 'b-test.example.net.',
+                'type': 'CNAME',
+                'ttl': 600,
+                'rrdatas': [
+                    'a-test.example.net.',
+                ]
+            }, {
+                'name': 'c-test.example.net.',
+                'type': 'TXT',
+                'ttl': 300,
+                'rrdatas': [
+                    '"OHAI"',
+                    '"OYE"',
+                ]
+            }
+        ]
+    }
