@@ -4,7 +4,7 @@
 
 .. desc-begin
 
-Google Cloud Platform (GCP) plugin for `gordon-janitor`_, an open-source service that checks cloud DNS records against a source of truth and submits corrections to `gordon`_.
+Google Cloud Platform (GCP) plugin for `gordon-janitor`_, an open-source service that checks Cloud DNS records against a source of truth (e.g. Compute Engine) and submits corrections to `gordon`_ via Google Pubsub.
 
 .. desc-end
 
@@ -15,9 +15,9 @@ Google Cloud Platform (GCP) plugin for `gordon-janitor`_, an open-source service
 Requirements
 ============
 
-* Python 3.6
+* Python 3.6. Support for other Python versions may be added in the future.
+* Service account JSON key that has Cloud DNS read access. See Google's `documentation`_ on how to create a key.
 
-Support for other Python versions may be added in the future.
 
 Development
 ===========
@@ -76,6 +76,15 @@ To generate documentation:
 
 Then navigate to ``localhost:$PORT``!
 
+To watch for changes and automatically reload in the browser:
+
+.. code-block:: bash
+
+    (env) $ cd docs
+    (env) $ make livehtml  # default port 8888
+    # to change port
+    (env) $ make livehtml PORT=8080
+
 
 Code of Conduct
 ===============
@@ -86,3 +95,4 @@ This project adheres to the `Open Code of Conduct`_. By participating, you are e
 .. _`Open Code of Conduct`: https://github.com/spotify/code-of-conduct/blob/master/code-of-conduct.md
 .. _`gordon`: https://github.com/spotify/gordon
 .. _`gordon-janitor`: https://github.com/spotify/gordon-janitor
+.. _`documentation`: https://cloud.google.com/iam/docs/creating-managing-service-account-keys

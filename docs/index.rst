@@ -25,6 +25,7 @@ User's Guide
    :maxdepth: 1
 
    api
+   exceptions
 
 
 Project Information
