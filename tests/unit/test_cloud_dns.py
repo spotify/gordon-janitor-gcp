@@ -14,13 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import logging
 
+import aiohttp
 import attr
 import pytest
 from aioresponses import aioresponses
 
+from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import cloud_dns
 
 
@@ -49,41 +50,28 @@ def test_create_gcp_rrset():
         cloud_dns.GCPResourceRecordSet(**missing_params)
 
 
-args = 'scopes,provide_loop'
-params = [
-    [['not-a-real-scope'], True],
-    [['not-a-real-scope'], False],
-    [None, True],
-    [None, False],
-]
-
-
-@pytest.mark.parametrize(args, params)
-def test_dns_client_default(scopes, provide_loop, fake_keyfile,
-                            mock_credentials, event_loop):
-    loop = None
-    if provide_loop:
-        loop = event_loop
+def test_dns_client_default(mocker):
+    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    creds = mocker.Mock()
+    auth_client.creds = creds
+    session = aiohttp.ClientSession()
 
     client = cloud_dns.AIOGoogleDNSClient(
-        'a-project', fake_keyfile, scopes, loop=loop)
+        'a-project', auth_client, session=session)
 
     assert 'a-project' == client.project
-    if not provide_loop:
-        loop = asyncio.get_event_loop()
-    assert loop == client._loop
-    if not scopes:
-        scopes = ['cloud-platform']
-    exp_scopes = [f'https://www.googleapis.com/auth/{s}' for s in scopes]
-
-    assert exp_scopes == client.scopes
 
     client._session.close()
 
 
 @pytest.fixture
-def client(fake_keyfile, mock_credentials):
-    client = cloud_dns.AIOGoogleDNSClient('a-project', keyfile=fake_keyfile)
+def client(mocker):
+    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    creds = mocker.Mock()
+    auth_client.creds = creds
+    session = aiohttp.ClientSession()
+    client = cloud_dns.AIOGoogleDNSClient(
+        'a-project', auth_client=auth_client, session=session)
     yield client
     # test teardown
     client._session.close()
@@ -91,7 +79,7 @@ def client(fake_keyfile, mock_credentials):
 
 @pytest.mark.asyncio
 async def test_get_records_for_zone(fake_response_data, client, caplog,
-                                    mock_credentials, monkeypatch):
+                                    monkeypatch):
     caplog.set_level(logging.DEBUG)
     mock_get_json_called = 0
 

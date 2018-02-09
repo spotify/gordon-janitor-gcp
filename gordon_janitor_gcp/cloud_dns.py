@@ -22,15 +22,27 @@ service account/JWT authentication (for now).
 
 To use:
 
-.. code-block:: pycon
+.. code-block:: python
 
-    >>> keyfile = '/path/to/service_account_keyfile.json'
-    >>> client = AIOGoogleDNSClient(
-    ...   project='my-dns-project', keyfile=keyfile)
-    >>> records = client.get_records_for_zone('testzone')
-    >>> print(records[0])
-    GCPResourceRecordSet(name='foo.testzone.com', type='A',
-                         rrdatas=['10.1.2.3'], ttl=300)
+    import asyncio
+
+    from gordon_janitor_gcp import auth
+
+    keyfile = '/path/to/service_account_keyfile.json'
+    auth_client = auth.GoogleAuthClient(keyfile=keyfile)
+    client = AIOGoogleDNSClient(
+        project='my-dns-project', auth_client=auth_client)
+
+    async def print_first_record(client)
+        records = await client.get_records_for_zone('testzone')
+        print(records[0])
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(print_first_record(client))
+
+    # example output
+    # GCPResourceRecordSet(name='foo.testzone.com', type='A',
+    #                      rrdatas=['10.1.2.3'], ttl=300)
 
 """
 
@@ -72,17 +84,18 @@ class AIOGoogleDNSClient(http_client.AIOGoogleHTTPClient):
 
     Args:
         project (str): Google project ID that hosts the managed DNS.
-        keyfile (str): path to service account (SA) keyfile.
-        scopes (list): scopes with which to authorize the SA. Default is
-            ``['cloud-platform']``.
+        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
+            to manage authentication for HTTP API requests.
         api_version (str): DNS API endpoint version. Defaults to ``v1``.
-        loop: asyncio event loop to use for HTTP requests.
+        session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
+            session to use for sending requests. Defaults to the
+            session object attached to ``auth_client`` if not provided.
     """
     BASE_URL = 'https://www.googleapis.com/dns'
 
-    def __init__(self, project=None, keyfile=None, scopes=None,
-                 api_version='v1', loop=None):
-        super().__init__(keyfile=keyfile, scopes=scopes, loop=loop)
+    def __init__(self, project=None, auth_client=None, api_version='v1',
+                 session=None):
+        super().__init__(auth_client=auth_client, session=session)
         self.project = project
         self._base_url = f'{self.BASE_URL}/{api_version}/projects/{project}'
 

@@ -38,52 +38,45 @@ def full_config(minimal_config):
     return minimal_config
 
 
-args = 'config_type,timeout,provide_loop'
+@pytest.fixture
+def dns_client(mocker, monkeypatch):
+    # creds = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    mock = mocker.Mock(cloud_dns.AIOGoogleDNSClient, autospec=True)
+    mock._session = mocker.Mock()
+    mock._session.close.return_value = True
+    monkeypatch.setattr('gordon_janitor_gcp.cloud_dns.AIOGoogleDNSClient', mock)
+    return mock
+
+
+args = 'timeout'
 params = [
-    ['minimal', False, False],
-    ['full', 80, True],
+    False, 80
 ]
 
 
 @pytest.mark.parametrize(args, params)
-def test_reconciler_default(config_type, timeout, provide_loop, event_loop,
-                            minimal_config, full_config, mock_credentials):
+def test_reconciler_default(timeout, dns_client):
     """GoogleDNSReconciler is created with expected attribute values."""
-    loop = None
-    if provide_loop:
-        loop = event_loop
-
-    config = minimal_config
-    if config_type == 'full':
-        config = full_config
-
     kwargs = {
-        'config': config,
+        'dns_client': dns_client,
         'rrset_channel': asyncio.Queue(),
         'changes_channel': asyncio.Queue(),
-        'loop': loop,
     }
     if timeout:
         kwargs['timeout'] = timeout
 
     recon_client = reconciler.GoogleDNSReconciler(**kwargs)
-    if not provide_loop:
-        loop = asyncio.get_event_loop()
-    assert loop == recon_client._loop
 
     if not timeout:
         timeout = 60  # default
     assert timeout == recon_client.timeout
 
-    recon_client.dns_client._session.close()
-
 
 @pytest.fixture
-async def recon_client(full_config, mock_credentials):
+async def recon_client(dns_client):
     rch, chch = asyncio.Queue(), asyncio.Queue()
-    recon_client = reconciler.GoogleDNSReconciler(full_config, rch, chch)
+    recon_client = reconciler.GoogleDNSReconciler(dns_client, rch, chch)
     yield recon_client
-    recon_client.dns_client._session.close()
     while not chch.empty():
         await chch.get()
 
@@ -137,7 +130,6 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
         assert coro2.done()
 
     assert 1 == recon_client.changes_channel.qsize()
-    assert recon_client.dns_client._session.closed
 
 
 @pytest.mark.asyncio

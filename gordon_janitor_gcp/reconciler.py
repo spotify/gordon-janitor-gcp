@@ -34,16 +34,21 @@ To use:
 
     import asyncio
 
-    config = {
-        'keyfile': 'path/to/keyfile.json',
-        'scopes': ['dns-relevant-scope'],
-        'project': 'my-awesome-project'
-    }
+    from gordon_janitor_gcp import auth
+    from gordon_janitor_gcp import cloud_dns
+
+    # setup auth + dns client
+    keyfile = '/path/to/service_account_keyfile.json'
+    auth_client = auth.GoogleAuthClient(keyfile=keyfile)
+    dns_client = AIOGoogleDNSClient(
+        project='my-dns-project', auth_client=auth_client)
+
+    # reconciler client setup
     rrset_chnl = asyncio.Queue()
     changes_chnl = asyncio.Queue()
 
     reconciler = GoogleDNSReconciler(
-        config, rrset_chnl, changes_chnl)
+        dns_client, rrset_chnl, changes_chnl)
 
     loop = asyncio.get_event_loop()
     try:
@@ -75,7 +80,8 @@ class GoogleDNSReconciler:
     no more change messages to expect.
 
     Args:
-        config (dict): configuration for this Google Cloud DNS plugin.
+        dns_client (gordon_janitor_gcp.cloud_dns.AIOGoogleDNSClient):
+            instantiated DNS client
         rrset_channel (asyncio.Queue): queue from which to consume
             record set messages to validate.
         changes_channel (asyncio.Queue): queue to publish message to
@@ -86,28 +92,16 @@ class GoogleDNSReconciler:
             and logged. Defaults to 60.
         loop: (optional) asyncio event loop to use for HTTP requests.
     """
+    # TODO (lynn): update object type of ``dns_client`` arg when proper
+    #              interfaces are implemented
 
     _ASYNC_METHODS = ['publish_change_messages', 'validate_rrsets_by_zone']
 
-    def __init__(self, config, rrset_channel, changes_channel, timeout=60,
-                 loop=None):
-        self.config = config
+    def __init__(self, dns_client, rrset_channel, changes_channel, timeout=60):
+        self.dns_client = dns_client
         self.rrset_channel = rrset_channel
         self.changes_channel = changes_channel
         self.timeout = timeout
-        self._loop = loop or asyncio.get_event_loop()
-        self.dns_client = self._get_dns_client()
-
-    def _get_dns_client(self):
-        keyfile = self.config.get('keyfile')
-        scopes = self.config.get('scopes')
-        project = self.config.get('project')
-        api_version = self.config.get('api_version', 'v1')
-
-        return cloud_dns.AIOGoogleDNSClient(
-            keyfile=keyfile, project=project, scopes=scopes,
-            api_version=api_version, loop=self._loop
-        )
 
     async def done(self):
         """Clean up and notify ``changes_channel`` of no more messages.
