@@ -215,3 +215,27 @@ async def test_get_json(json_func, exp_resp, client, monkeypatch, caplog):
     assert exp_resp == resp
     assert 1 == mock_set_valid_token_called
     assert 2 == len(caplog.records)
+
+
+#####
+# Tests & fixtures the GPagintorMixin
+#####
+@pytest.mark.asyncio
+@pytest.mark.parametrize('max_pages', [1, 2])
+async def test_list_all(mocker, max_pages):
+    number_of_calls = 0
+
+    class TestClient(http_client.GPaginatorMixin):
+        async def get_json(self, url, params=None):
+            nonlocal number_of_calls
+            if number_of_calls < (max_pages - 1):
+                number_of_calls += 1
+                return {'data': 'data', 'nextPageToken': 'token'}
+            # last page doesn't include a nextPageToken
+            return {'data': 'final page'}
+
+    simple_paging_client = TestClient()
+
+    results = await simple_paging_client.list_all(
+        conftest.API_BASE_URL, {})
+    assert max_pages == len(results)

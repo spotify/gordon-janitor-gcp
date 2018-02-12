@@ -69,3 +69,9 @@ Publisher
 ----------
 
 .. automodule:: gordon_janitor_gcp.gpubsub_publisher
+
+
+GCE Clients
+-----------
+
+.. automodule:: gordon_janitor_gcp.gcp_clients
