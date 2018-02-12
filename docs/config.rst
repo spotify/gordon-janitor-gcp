@@ -17,6 +17,7 @@ Configuration
 
 The following sections are supported:
 
+
 gcp
 ~~~
 
@@ -28,9 +29,13 @@ Any configuration key/value listed here may also be used in the specific plugin 
 
     While one global key for all plugins is supported, it's advised to create a key per plugin with only the permissions it requires. To setup a service account, follow `Google's docs on creating & managing service account keys <https://cloud.google.com/iam/docs/creating-managing-service-account-keys>`_.
 
+    .. attention::
+
+        For the Pub/Sub plugin, ``keyfile`` is not required when running against the `Pub/Sub Emulator <https://cloud.google.com/pubsub/docs/emulator>`_ that Google provides.
+
 .. option:: project="STR"
 
-    `Required`: Google Project ID which hosts the relevant GCP services (e.g. Cloud DNS, PubSub, Compute Engine).
+    `Required`: Google Project ID which hosts the relevant GCP services (e.g. Cloud DNS, Pub/Sub, Compute Engine).
 
     To learn more about GCP projects, please see `Google's docs on creating & managing projects <https://cloud.google.com/resource-manager/docs/creating-managing-projects>`_.
 
@@ -46,4 +51,17 @@ Any configuration key/value listed here may also be used in the specific plugin 
 gcp.gdns
 ~~~~~~~~
 
-All configuration options above may be used here. There are no specific DNS-related configuration options.
+All configuration options above in the general ``[gcp]`` may be used here. There are no specific DNS-related configuration options.
+
+gcp.gpubsub
+~~~~~~~~~~~
+
+All configuration options above in the general ``[gcp]`` may be used here. Additional Google Cloud Pub/Sub-related configuration is needed:
+
+.. option:: topic="STR"
+
+    `Required`: Google Pub/Sub topic to receive the publish change messages.
+
+.. attention::
+
+    For the Pub/Sub plugin, ``keyfile`` is not required when running against the `Pub/Sub Emulator <https://cloud.google.com/pubsub/docs/emulator>`_ that Google provides.

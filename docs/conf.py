@@ -171,4 +171,7 @@ man_pages = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 # TODO (econchick@): Once gordon core docs are live, add here
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {
+    'https://docs.python.org/3': None,
+    'https://googlecloudplatform.github.io/google-cloud-python/latest/': None,
+}
