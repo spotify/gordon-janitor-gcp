@@ -25,13 +25,10 @@ from aioresponses import aioresponses
 from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp import http_client
+from tests.unit import conftest
 
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
-
-
-API_BASE_URL = 'https://example.com'
-API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
 
 
 #####
@@ -134,8 +131,8 @@ async def test_request(client, monkeypatch, caplog):
     resp_text = 'ohai'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=200, body=resp_text)
-        resp = await client.request('get', API_URL)
+        mocked.get(conftest.API_URL, status=200, body=resp_text)
+        resp = await client.request('get', conftest.API_URL)
 
     assert resp == resp_text
     assert 1 == mock_set_valid_token_called
@@ -156,9 +153,9 @@ async def test_request_refresh(client, monkeypatch, caplog):
     resp_text = 'ohai'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=200, body=resp_text)
-        resp = await client.request('get', API_URL)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=200, body=resp_text)
+        resp = await client.request('get', conftest.API_URL)
 
     assert resp == resp_text
     assert 2 == mock_set_valid_token_called
@@ -177,11 +174,11 @@ async def test_request_max_refresh_reached(client, monkeypatch, caplog):
     monkeypatch.setattr(client, 'set_valid_token', mock_set_valid_token)
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
         with pytest.raises(exceptions.GCPHTTPError) as e:
-            await client.request('get', API_URL)
+            await client.request('get', conftest.API_URL)
 
         e.match('Issue connecting to example.com:')
 
@@ -220,8 +217,8 @@ async def test_get_json(json_func, exp_resp, client, monkeypatch, caplog):
     resp_json = '{"hello": "world"}'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=200, body=resp_json)
-        resp = await client.get_json(API_URL, json_func)
+        mocked.get(conftest.API_URL, status=200, body=resp_json)
+        resp = await client.get_json(conftest.API_URL, json_func)
 
     assert exp_resp == resp
     assert 1 == mock_set_valid_token_called
