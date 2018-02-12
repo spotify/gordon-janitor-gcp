@@ -91,6 +91,7 @@ def fake_keyfile(fake_keyfile_data, tmpdir):
     return tmp_keyfile
 
 
+@pytest.fixture
 def mock_coro(mocker):
     mock = mocker.Mock()
 
