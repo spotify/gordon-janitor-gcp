@@ -95,6 +95,7 @@ setup(
     packages=PACKAGES,
     entry_points={
         'gordon_janitor.plugins': [
+            'gcp.gce = gordon_janitor:get_authority',
             'gcp.gdns = gordon_janitor_gcp:get_reconciler',
             'gcp.gpubsub = gordon_janitor_gcp:get_publisher',
         ],
