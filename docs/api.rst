@@ -63,3 +63,21 @@ Reconciler
 ----------
 
 .. automodule:: gordon_janitor_gcp.gdns_reconciler
+
+
+GCE Instance Authority
+----------------------
+
+.. automodule:: gordon_janitor_gcp.gce_instance_authority
+
+
+GCE Clients
+-----------
+
+.. automodule:: gordon_janitor_gcp.gce_clients
+
+
+Channel Message Generators
+--------------------------
+
+.. automodule:: gordon_janitor_gcp.msg_generators
