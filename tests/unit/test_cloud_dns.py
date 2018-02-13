@@ -82,37 +82,6 @@ def test_dns_client_default(scopes, provide_loop, fake_keyfile,
 
 
 @pytest.fixture
-def fake_response_data():
-    return {
-        'rrsets': [
-            {
-                'name': 'a-test.example.net.',
-                'type': 'A',
-                'ttl': 300,
-                'rrdatas': [
-                    '10.1.2.3',
-                ]
-            }, {
-                'name': 'b-test.example.net.',
-                'type': 'CNAME',
-                'ttl': 600,
-                'rrdatas': [
-                    'a-test.example.net.',
-                ]
-            }, {
-                'name': 'c-test.example.net.',
-                'type': 'TXT',
-                'ttl': 300,
-                'rrdatas': [
-                    '"OHAI"',
-                    '"OYE"',
-                ]
-            }
-        ]
-    }
-
-
-@pytest.fixture
 def client(fake_keyfile, mock_credentials):
     client = cloud_dns.AIOGoogleDNSClient('a-project', keyfile=fake_keyfile)
     yield client
