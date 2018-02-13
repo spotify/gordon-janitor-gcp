@@ -17,6 +17,8 @@
 Module for reusable pytest fixtures.
 """
 
+import logging
+
 import pytest  # NOQA
 
 
@@ -49,3 +51,11 @@ def fake_response_data():
             }
         ]
     }
+
+
+@pytest.fixture
+def caplog(caplog):
+    """Set global test logging levels."""
+    caplog.set_level(logging.DEBUG)
+    logging.getLogger('asyncio').setLevel(logging.WARNING)
+    return caplog

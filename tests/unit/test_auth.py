@@ -28,6 +28,8 @@ from google.oauth2 import service_account
 from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
 
+logging.getLogger('asyncio').setLevel(logging.WARNING)
+
 
 API_BASE_URL = 'https://example.com'
 API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
@@ -132,8 +134,6 @@ def test_auth_client_default(scopes, provide_session, provide_loop, event_loop,
 
 def test_auth_client_raises_json(tmpdir, caplog):
     """Client initialization raises when keyfile not valid json."""
-    caplog.set_level(logging.DEBUG)
-
     tmp_keyfile = tmpdir.mkdir('keys').join('broken_keyfile.json')
     tmp_keyfile.write('broken json')
 
@@ -146,8 +146,6 @@ def test_auth_client_raises_json(tmpdir, caplog):
 
 def test_auth_client_raises_not_found(tmpdir, caplog):
     """Client initialization raises when keyfile not found."""
-    caplog.set_level(logging.DEBUG)
-
     tmp_keydir = tmpdir.mkdir('keys')
     no_keyfile = os.path.join(tmp_keydir, 'not-existent.json')
 
@@ -178,8 +176,6 @@ def client(fake_keyfile, mock_service_acct, session, event_loop):
 async def test_refresh_token(client, fake_keyfile_data, mock_parse_expiry,
                              caplog):
     """Successfully refresh access token."""
-    caplog.set_level(logging.DEBUG)
-
     url = fake_keyfile_data['token_uri']
     token = 'c0ffe3'
     payload = {
@@ -205,8 +201,6 @@ params = [
 async def test_refresh_token_raises(status, payload, exc, err_msg, client,
                                     fake_keyfile_data, caplog):
     """Response errors from attempting to refresh token."""
-    caplog.set_level(logging.DEBUG)
-
     url = fake_keyfile_data['token_uri']
 
     with aioresponses() as mocked:

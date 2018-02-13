@@ -25,6 +25,9 @@ from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import cloud_dns
 
 
+logging.getLogger('asyncio').setLevel(logging.WARNING)
+
+
 def test_create_gcp_rrset():
     """Create valid GCPResourceRecordSet instances."""
     data = {
@@ -80,7 +83,6 @@ def client(mocker):
 @pytest.mark.asyncio
 async def test_get_records_for_zone(fake_response_data, client, caplog,
                                     monkeypatch):
-    caplog.set_level(logging.DEBUG)
     mock_get_json_called = 0
 
     async def mock_get_json(*args, **kwargs):

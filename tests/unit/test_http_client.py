@@ -27,6 +27,9 @@ from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp import http_client
 
 
+logging.getLogger('asyncio').setLevel(logging.WARNING)
+
+
 API_BASE_URL = 'https://example.com'
 API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
 
@@ -120,8 +123,6 @@ async def test_set_valid_token(token, expiry, exp_mocked_refresh, client,
 @pytest.mark.asyncio
 async def test_request(client, monkeypatch, caplog):
     """HTTP GET request is successful."""
-    caplog.set_level(logging.DEBUG)
-
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():
@@ -144,8 +145,6 @@ async def test_request(client, monkeypatch, caplog):
 @pytest.mark.asyncio
 async def test_request_refresh(client, monkeypatch, caplog):
     """HTTP GET request is successful while refreshing token."""
-    caplog.set_level(logging.DEBUG)
-
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():
@@ -169,7 +168,6 @@ async def test_request_refresh(client, monkeypatch, caplog):
 @pytest.mark.asyncio
 async def test_request_max_refresh_reached(client, monkeypatch, caplog):
     """HTTP GET request is not successful from max refresh requests met."""
-    caplog.set_level(logging.DEBUG)
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():
@@ -211,8 +209,6 @@ params = [
 @pytest.mark.asyncio
 async def test_get_json(json_func, exp_resp, client, monkeypatch, caplog):
     """HTTP GET request with JSON parsing."""
-    caplog.set_level(logging.DEBUG)
-
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():

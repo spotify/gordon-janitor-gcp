@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import asyncio
-import logging
 
 import pytest
 
@@ -40,7 +39,6 @@ def full_config(minimal_config):
 
 @pytest.fixture
 def dns_client(mocker, monkeypatch):
-    # creds = mocker.Mock(auth.GoogleAuthClient, autospec=True)
     mock = mocker.Mock(cloud_dns.AIOGoogleDNSClient, autospec=True)
     mock._session = mocker.Mock()
     mock._session.close.return_value = True
@@ -95,8 +93,6 @@ params = [
 async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
                     monkeypatch):
     """Proper cleanup with or without pending tasks."""
-    caplog.set_level(logging.DEBUG)
-
     recon_client.timeout = timeout
 
     # mocked methods names must match those in reconciler._ASYNC_METHODS
@@ -136,7 +132,6 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
 async def test_publish_change_messages(recon_client, fake_response_data,
                                        caplog):
     """Publish message to changes queue."""
-    caplog.set_level(logging.DEBUG)
     rrsets = fake_response_data['rrsets']
     desired_rrsets = [cloud_dns.GCPResourceRecordSet(**kw) for kw in rrsets]
 
@@ -150,7 +145,6 @@ async def test_publish_change_messages(recon_client, fake_response_data,
 async def test_validate_rrsets_by_zone(recon_client, fake_response_data, caplog,
                                        monkeypatch):
     """A difference is detected and a change message is published."""
-    caplog.set_level(logging.DEBUG)
     rrsets = fake_response_data['rrsets']
 
     mock_get_records_for_zone_called = 0
@@ -192,8 +186,6 @@ params = [
 async def test_start(msg, exp_log_records, exp_mock_calls, caplog, recon_client,
                      monkeypatch):
     """Start reconciler & continue if certain errors are raised."""
-    caplog.set_level(logging.DEBUG)
-
     mock_validate_rrsets_by_zone_called = 0
 
     async def mock_validate_rrsets_by_zone(*args, **kwargs):
