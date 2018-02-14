@@ -23,10 +23,12 @@ This client makes use of the asynchronous DNS client as defined in
 :py:mod:`gordon_janitor_gcp.cloud_dns`, and therefore must use
 service account/JWT authentication (for now).
 
+See :ref:`config` for the required Google DNS configuration.
+
 .. attention::
 
     This reconciler client is an internal module for the core janitor
-    logic. No other user cases are expected.
+    logic. No other use cases are expected.
 
 To use:
 
@@ -34,21 +36,15 @@ To use:
 
     import asyncio
 
-    from gordon_janitor_gcp import auth
-    from gordon_janitor_gcp import cloud_dns
-
-    # setup auth + dns client
-    keyfile = '/path/to/service_account_keyfile.json'
-    auth_client = auth.GoogleAuthClient(keyfile=keyfile)
-    dns_client = AIOGoogleDNSClient(
-        project='my-dns-project', auth_client=auth_client)
-
-    # reconciler client setup
+    config = {
+        'keyfile': '/path/to/keyfile.json',
+        'project': 'a-dns-project'
+    }
     rrset_chnl = asyncio.Queue()
     changes_chnl = asyncio.Queue()
 
     reconciler = GoogleDNSReconciler(
-        dns_client, rrset_chnl, changes_chnl)
+        config, rrset_chnl, changes_chnl)
 
     loop = asyncio.get_event_loop()
     try:
@@ -62,6 +58,7 @@ import logging
 
 import attr
 
+from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import cloud_dns
 from gordon_janitor_gcp import exceptions
 
@@ -75,33 +72,63 @@ class GoogleDNSReconciler:
     state.
 
     Once validation is done, the Reconciler will emit a ``None`` message
-    to the ``changes_channel`` queue signalling to the ``Publisher``
-    (TODO: update name of publisher class once decided) that there are
-    no more change messages to expect.
+    to the ``changes_channel`` queue, signalling a Publisher client
+    (e.g. ``gpubsub_client.AIOGooglePubsubClient``) to publish the
+    message to a pub/sub to which `Gordon
+    <https://github.com/spotify/gordon>`_ subscribes.
 
     Args:
-        dns_client (gordon_janitor_gcp.cloud_dns.AIOGoogleDNSClient):
-            instantiated DNS client
+        config (dict): Google Cloud DNS-related configuration.
         rrset_channel (asyncio.Queue): queue from which to consume
             record set messages to validate.
         changes_channel (asyncio.Queue): queue to publish message to
             make corrections to Cloud DNS.
-        timeout (int): (optional) seconds to wait for the plugin's tasks
-            to finish before emitting a ``None`` message to the
-            ``changes_channel``. Outstanding tasks will be cancelled
-            and logged. Defaults to 60.
-        loop: (optional) asyncio event loop to use for HTTP requests.
     """
-    # TODO (lynn): update object type of ``dns_client`` arg when proper
-    #              interfaces are implemented
 
     _ASYNC_METHODS = ['publish_change_messages', 'validate_rrsets_by_zone']
 
-    def __init__(self, dns_client, rrset_channel, changes_channel, timeout=60):
-        self.dns_client = dns_client
+    def __init__(self, config, rrset_channel=None, changes_channel=None, **kw):
+        self.config = config
         self.rrset_channel = rrset_channel
         self.changes_channel = changes_channel
-        self.timeout = timeout
+        self.cleanup_timeout = config.get('cleanup_timeout', 60)
+        self.dns_client = None  # set in _init
+        self._init()
+
+    def _init(self):
+        auth_client = self._init_auth()
+        self.dns_client = self._init_dns_client(auth_client)
+
+    def _init_auth(self):
+        # TODO (lynn): keyfile won't be required once we support other
+        #              auth methods
+        try:
+            keyfile = self.config['keyfile']
+        except KeyError:
+            msg = ('The path to a Service Account JSON keyfile is required '
+                   'to authenticate for Google Cloud DNS.')
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+
+        scopes = self.config.get('scopes')
+        return auth.GoogleAuthClient(keyfile=keyfile, scopes=scopes)
+
+    def _init_dns_client(self, auth_client):
+        # TODO: (FEATURE) maybe support inference of project based
+        #       on os.environ or keyfile
+        try:
+            project = self.config['project']
+        except KeyError:
+            msg = 'The GCP project where Cloud DNS is located is required.'
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+
+        kwargs = {
+            'project': project,
+            'api_version': self.config.get('api_version'),
+            'auth_client': auth_client
+        }
+        return cloud_dns.AIOGoogleDNSClient(**kwargs)
 
     async def done(self):
         """Clean up and notify ``changes_channel`` of no more messages.
@@ -120,7 +147,7 @@ class GoogleDNSReconciler:
             t for t in all_tasks if t._coro.__name__ in self._ASYNC_METHODS
         ]
         sleep_for = 0.5  # half a second
-        iterations = self.timeout / sleep_for
+        iterations = self.cleanup_timeout / sleep_for
 
         while iterations:
             tasks_to_clear = [t for t in tasks_to_clear if not t.done()]

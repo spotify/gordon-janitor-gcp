@@ -27,3 +27,7 @@ class GCPAuthError(GCPGordonJanitorError):
 
 class GCPHTTPError(GCPGordonJanitorError):
     """An HTTP error occured."""
+
+
+class GCPConfigError(GCPGordonJanitorError):
+    """Improper or incomplete configuration for plugin."""

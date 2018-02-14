@@ -18,7 +18,9 @@ import asyncio
 
 import pytest
 
+from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import cloud_dns
+from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp import reconciler
 
 
@@ -42,38 +44,73 @@ def dns_client(mocker, monkeypatch):
     mock = mocker.Mock(cloud_dns.AIOGoogleDNSClient, autospec=True)
     mock._session = mocker.Mock()
     mock._session.close.return_value = True
-    monkeypatch.setattr('gordon_janitor_gcp.cloud_dns.AIOGoogleDNSClient', mock)
+    monkeypatch.setattr(
+        'gordon_janitor_gcp.cloud_dns.AIOGoogleDNSClient', mock)
     return mock
 
 
-args = 'timeout'
+@pytest.fixture
+def config(fake_keyfile):
+    return {
+        'keyfile': fake_keyfile,
+        'project': 'test-example',
+        'scopes': ['a-scope'],
+    }
+
+
+@pytest.fixture
+def auth_client(mocker, monkeypatch):
+    mock = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    monkeypatch.setattr(
+        'gordon_janitor_gcp.reconciler.auth.GoogleAuthClient', mock)
+    return mock
+
+
+args = 'timeout,exp_timeout'
 params = [
-    False, 80
+    (None, 60),
+    (30, 30),
 ]
 
 
 @pytest.mark.parametrize(args, params)
-def test_reconciler_default(timeout, dns_client):
-    """GoogleDNSReconciler is created with expected attribute values."""
-    kwargs = {
-        'dns_client': dns_client,
-        'rrset_channel': asyncio.Queue(),
-        'changes_channel': asyncio.Queue(),
-    }
+def test_reconciler_default(timeout, exp_timeout, config, auth_client):
+    rrset_chnl, changes_chnl = asyncio.Queue(), asyncio.Queue()
+
     if timeout:
-        kwargs['timeout'] = timeout
+        config['cleanup_timeout'] = timeout
 
-    recon_client = reconciler.GoogleDNSReconciler(**kwargs)
+    recon_client = reconciler.GoogleDNSReconciler(
+        config, rrset_chnl, changes_chnl)
+    assert exp_timeout == recon_client.cleanup_timeout
+    assert recon_client.dns_client is not None
+    assert config is recon_client.config
 
-    if not timeout:
-        timeout = 60  # default
-    assert timeout == recon_client.timeout
+
+args = 'config_key,exp_msg'
+params = [
+    ('keyfile', 'The path to a Service Account JSON keyfile is required '),
+    ('project', 'The GCP project where Cloud DNS is located is required.')
+]
+
+
+@pytest.mark.parametrize(args, params)
+def test_reconciler_default_raises(config_key, exp_msg, auth_client, config,
+                                   caplog):
+    config.pop(config_key)
+    rrset_chnl, changes_chnl = asyncio.Queue(), asyncio.Queue()
+
+    with pytest.raises(exceptions.GCPConfigError) as e:
+        reconciler.GoogleDNSReconciler(config, rrset_chnl, changes_chnl)
+
+    e.match(exp_msg)
+    assert 1 == len(caplog.records)
 
 
 @pytest.fixture
-async def recon_client(dns_client):
+async def recon_client(config, auth_client):
     rch, chch = asyncio.Queue(), asyncio.Queue()
-    recon_client = reconciler.GoogleDNSReconciler(dns_client, rch, chch)
+    recon_client = reconciler.GoogleDNSReconciler(config, rch, chch)
     yield recon_client
     while not chch.empty():
         await chch.get()
@@ -93,7 +130,7 @@ params = [
 async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
                     monkeypatch):
     """Proper cleanup with or without pending tasks."""
-    recon_client.timeout = timeout
+    recon_client.cleanup_timeout = timeout
 
     # mocked methods names must match those in reconciler._ASYNC_METHODS
     async def publish_change_messages():
