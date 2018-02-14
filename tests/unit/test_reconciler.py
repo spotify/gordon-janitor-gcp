@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import asyncio
-import logging
 
 import pytest
 
@@ -38,52 +37,44 @@ def full_config(minimal_config):
     return minimal_config
 
 
-args = 'config_type,timeout,provide_loop'
+@pytest.fixture
+def dns_client(mocker, monkeypatch):
+    mock = mocker.Mock(cloud_dns.AIOGoogleDNSClient, autospec=True)
+    mock._session = mocker.Mock()
+    mock._session.close.return_value = True
+    monkeypatch.setattr('gordon_janitor_gcp.cloud_dns.AIOGoogleDNSClient', mock)
+    return mock
+
+
+args = 'timeout'
 params = [
-    ['minimal', False, False],
-    ['full', 80, True],
+    False, 80
 ]
 
 
 @pytest.mark.parametrize(args, params)
-def test_reconciler_default(config_type, timeout, provide_loop, event_loop,
-                            minimal_config, full_config, mock_credentials):
+def test_reconciler_default(timeout, dns_client):
     """GoogleDNSReconciler is created with expected attribute values."""
-    loop = None
-    if provide_loop:
-        loop = event_loop
-
-    config = minimal_config
-    if config_type == 'full':
-        config = full_config
-
     kwargs = {
-        'config': config,
+        'dns_client': dns_client,
         'rrset_channel': asyncio.Queue(),
         'changes_channel': asyncio.Queue(),
-        'loop': loop,
     }
     if timeout:
         kwargs['timeout'] = timeout
 
     recon_client = reconciler.GoogleDNSReconciler(**kwargs)
-    if not provide_loop:
-        loop = asyncio.get_event_loop()
-    assert loop == recon_client._loop
 
     if not timeout:
         timeout = 60  # default
     assert timeout == recon_client.timeout
 
-    recon_client.dns_client._session.close()
-
 
 @pytest.fixture
-async def recon_client(full_config, mock_credentials):
+async def recon_client(dns_client):
     rch, chch = asyncio.Queue(), asyncio.Queue()
-    recon_client = reconciler.GoogleDNSReconciler(full_config, rch, chch)
+    recon_client = reconciler.GoogleDNSReconciler(dns_client, rch, chch)
     yield recon_client
-    recon_client.dns_client._session.close()
     while not chch.empty():
         await chch.get()
 
@@ -102,8 +93,6 @@ params = [
 async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
                     monkeypatch):
     """Proper cleanup with or without pending tasks."""
-    caplog.set_level(logging.DEBUG)
-
     recon_client.timeout = timeout
 
     # mocked methods names must match those in reconciler._ASYNC_METHODS
@@ -137,14 +126,12 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
         assert coro2.done()
 
     assert 1 == recon_client.changes_channel.qsize()
-    assert recon_client.dns_client._session.closed
 
 
 @pytest.mark.asyncio
 async def test_publish_change_messages(recon_client, fake_response_data,
                                        caplog):
     """Publish message to changes queue."""
-    caplog.set_level(logging.DEBUG)
     rrsets = fake_response_data['rrsets']
     desired_rrsets = [cloud_dns.GCPResourceRecordSet(**kw) for kw in rrsets]
 
@@ -158,7 +145,6 @@ async def test_publish_change_messages(recon_client, fake_response_data,
 async def test_validate_rrsets_by_zone(recon_client, fake_response_data, caplog,
                                        monkeypatch):
     """A difference is detected and a change message is published."""
-    caplog.set_level(logging.DEBUG)
     rrsets = fake_response_data['rrsets']
 
     mock_get_records_for_zone_called = 0
@@ -200,8 +186,6 @@ params = [
 async def test_start(msg, exp_log_records, exp_mock_calls, caplog, recon_client,
                      monkeypatch):
     """Start reconciler & continue if certain errors are raised."""
-    caplog.set_level(logging.DEBUG)
-
     mock_validate_rrsets_by_zone_called = 0
 
     async def mock_validate_rrsets_by_zone(*args, **kwargs):

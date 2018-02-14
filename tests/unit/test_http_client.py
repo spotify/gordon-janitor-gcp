@@ -14,19 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import datetime
 import json
 import logging
-import os
 
 import aiohttp
 import pytest
 from aioresponses import aioresponses
-from google.oauth2 import _client as oauth_client
 
+from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp import http_client
+
+
+logging.getLogger('asyncio').setLevel(logging.WARNING)
 
 
 API_BASE_URL = 'https://example.com'
@@ -36,135 +37,28 @@ API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
 #####
 # Tests for simple client instantiation
 #####
-args = 'scopes,provide_loop'
-params = [
-    [['not-a-real-scope'], True],
-    [['not-a-real-scope'], False],
-    [None, True],
-    [None, False],
-]
-
-
-@pytest.mark.parametrize(args, params)
-def test_http_client_default(scopes, provide_loop, event_loop, fake_keyfile,
-                             fake_keyfile_data, mock_credentials):
+@pytest.mark.parametrize('provide_session', [True, False])
+def test_http_client_default(provide_session, mocker):
     """AIOGoogleHTTPClient is created with expected attributes."""
-    loop = None
-    if provide_loop:
-        loop = event_loop
+    session = None
+    if provide_session:
+        session = aiohttp.ClientSession()
 
-    client = http_client.AIOGoogleHTTPClient(
-        keyfile=fake_keyfile, scopes=scopes, loop=loop
-    )
-    assert fake_keyfile_data == client._keydata
+    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client._session = aiohttp.ClientSession()
+    creds = mocker.Mock()
+    auth_client.creds = creds
+    client = http_client.AIOGoogleHTTPClient(auth_client=auth_client,
+                                             session=session)
 
-    if not scopes:
-        scopes = ['cloud-platform']
-    exp_scopes = [f'https://www.googleapis.com/auth/{s}' for s in scopes]
-
-    assert exp_scopes == client.scopes
-
-    if not provide_loop:
-        loop = asyncio.get_event_loop()
-    assert loop == client._loop
-
-    assert isinstance(client._session, aiohttp.client.ClientSession)
-    assert not client.token
-    assert not client.expiry
+    if provide_session:
+        assert session is client._session
+        assert auth_client._session is not client._session
+    else:
+        assert auth_client._session is client._session
+        assert session is not client._session
 
     client._session.close()
-
-
-def test_http_client_raises_json(tmpdir, caplog):
-    """Client initialization raises when keyfile not valid json."""
-    caplog.set_level(logging.DEBUG)
-
-    tmp_keyfile = tmpdir.mkdir('keys').join('broken_keyfile.json')
-    tmp_keyfile.write('broken json')
-
-    with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        http_client.AIOGoogleHTTPClient(keyfile=tmp_keyfile)
-
-    e.match(f'Keyfile {tmp_keyfile} is not valid JSON.')
-    assert 1 == len(caplog.records)
-
-
-def test_http_client_raises_not_found(tmpdir, caplog):
-    """Client initialization raises when keyfile not found."""
-    caplog.set_level(logging.DEBUG)
-
-    tmp_keydir = tmpdir.mkdir('keys')
-    no_keyfile = os.path.join(tmp_keydir, 'not-existent.json')
-
-    with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        http_client.AIOGoogleHTTPClient(keyfile=no_keyfile)
-
-    e.match(f'Keyfile {no_keyfile} was not found.')
-    assert 1 == len(caplog.records)
-
-
-#####
-# Tests & fixtures for access token handling
-#####
-@pytest.fixture
-def mock_parse_expiry(mocker, monkeypatch):
-    mock = mocker.MagicMock(oauth_client, autospec=True)
-    mock._parse_expiry.return_value = datetime.datetime(2018, 1, 1, 12, 0, 0)
-    monkeypatch.setattr('gordon_janitor_gcp.http_client._client', mock)
-    return mock
-
-
-@pytest.fixture
-def client(fake_keyfile, mock_credentials):
-    client = http_client.AIOGoogleHTTPClient(keyfile=fake_keyfile)
-    yield client
-    # test teardown
-    client._session.close()
-
-
-@pytest.mark.asyncio
-async def test_refresh_token(client, fake_keyfile_data, mock_parse_expiry,
-                             caplog):
-    """Successfully refresh access token."""
-    caplog.set_level(logging.DEBUG)
-
-    url = fake_keyfile_data['token_uri']
-    token = 'c0ffe3'
-    payload = {
-        'access_token': token,
-        'expires_in': 3600,  # seconds = 1hr
-    }
-    with aioresponses() as mocked:
-        mocked.post(url, status=200, payload=payload)
-        await client.refresh_token()
-    assert token == client.token
-    assert 2 == len(caplog.records)
-
-
-args = 'status,payload,exc,err_msg'
-params = [
-    [504, None, exceptions.GCPHTTPError, 'Issue connecting to example.com'],
-    [200, {}, exceptions.GCPAuthError, 'No access token in response.'],
-]
-
-
-@pytest.mark.parametrize(args, params)
-@pytest.mark.asyncio
-async def test_refresh_token_raises(status, payload, exc, err_msg, client,
-                                    fake_keyfile_data, caplog):
-    """Response errors from attempting to refresh token."""
-    caplog.set_level(logging.DEBUG)
-
-    url = fake_keyfile_data['token_uri']
-
-    with aioresponses() as mocked:
-        mocked.post(url, status=status, payload=payload)
-        with pytest.raises(exc) as e:
-            await client.refresh_token()
-
-        e.match(err_msg)
-
-    assert 3 == len(caplog.records)
 
 
 # pytest prevents monkeypatching datetime directly
@@ -172,6 +66,19 @@ class MockDatetime(datetime.datetime):
     @classmethod
     def utcnow(cls):
         return datetime.datetime(2018, 1, 1, 11, 30, 0)
+
+
+@pytest.fixture
+def client(mocker):
+    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    creds = mocker.Mock()
+    creds.token = '0ldc0ffe3'
+    auth_client.creds = creds
+    session = aiohttp.ClientSession()
+    client = http_client.AIOGoogleHTTPClient(auth_client=auth_client,
+                                             session=session)
+    yield client
+    client._session.close()
 
 
 args = 'token,expiry,exp_mocked_refresh'
@@ -189,7 +96,7 @@ params = [
 
 @pytest.mark.parametrize(args, params)
 @pytest.mark.asyncio
-async def test_set_valid_token(client, token, expiry, exp_mocked_refresh,
+async def test_set_valid_token(token, expiry, exp_mocked_refresh, client,
                                monkeypatch):
     """Refresh tokens if invalid or not set."""
     datetime.datetime = MockDatetime
@@ -200,10 +107,11 @@ async def test_set_valid_token(client, token, expiry, exp_mocked_refresh,
         nonlocal mock_refresh_token_called
         mock_refresh_token_called += 1
 
-    client.token = token
-    client.expiry = expiry
+    client._auth_client.creds.token = token
+    client._auth_client.creds.expiry = expiry
 
-    monkeypatch.setattr(client, 'refresh_token', mock_refresh_token)
+    monkeypatch.setattr(
+        client._auth_client, 'refresh_token', mock_refresh_token)
 
     await client.set_valid_token()
     assert exp_mocked_refresh == mock_refresh_token_called
@@ -215,8 +123,6 @@ async def test_set_valid_token(client, token, expiry, exp_mocked_refresh,
 @pytest.mark.asyncio
 async def test_request(client, monkeypatch, caplog):
     """HTTP GET request is successful."""
-    caplog.set_level(logging.DEBUG)
-
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():
@@ -239,8 +145,6 @@ async def test_request(client, monkeypatch, caplog):
 @pytest.mark.asyncio
 async def test_request_refresh(client, monkeypatch, caplog):
     """HTTP GET request is successful while refreshing token."""
-    caplog.set_level(logging.DEBUG)
-
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():
@@ -264,7 +168,6 @@ async def test_request_refresh(client, monkeypatch, caplog):
 @pytest.mark.asyncio
 async def test_request_max_refresh_reached(client, monkeypatch, caplog):
     """HTTP GET request is not successful from max refresh requests met."""
-    caplog.set_level(logging.DEBUG)
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():
@@ -306,8 +209,6 @@ params = [
 @pytest.mark.asyncio
 async def test_get_json(json_func, exp_resp, client, monkeypatch, caplog):
     """HTTP GET request with JSON parsing."""
-    caplog.set_level(logging.DEBUG)
-
     mock_set_valid_token_called = 0
 
     async def mock_set_valid_token():

@@ -16,30 +16,26 @@
 """
 Module to interact with Google APIs via asynchronous HTTP calls.
 
-Only service account (JSON Web Tokens/JWT) authentication is currently
-supported. To setup a service account, follow `Google's docs <https://
-cloud.google.com/iam/docs/creating-managing-service-account-keys>`_.
-
 To use:
 
 .. code-block:: python
 
+    from gordon_janitor_gcp import auth
+
     keyfile = '/path/to/service_account_keyfile.json'
-    client = AIOGoogleHTTPClient(keyfile)
+    auth_client = auth.GoogleAuthClient(keyfile=keyfile)
+
+    client = AIOGoogleHTTPClient(auth_client=auth_client)
     resp = await client.request('get', 'http://api.example.com/foo')
 
 """
 
-import asyncio
 import datetime
 import http.client
 import json
 import logging
-import urllib.parse
 
 import aiohttp
-from google.oauth2 import _client
-from google.oauth2 import service_account
 
 from gordon_janitor_gcp import exceptions
 
@@ -62,119 +58,31 @@ RESP_LOG_FMT = 'Response: "{method} {url}" {status} {reason}'
 class AIOGoogleHTTPClient:
     """Async HTTP client to Google APIs with service-account-based auth.
 
-    Attributes:
-        JWT_GRANT_TYPE (str): grant type header value when
-            requesting/refreshing an access token.
-        SCOPE_TMPL_URL (str): template URL for Google auth scopes
-
     Args:
-        keyfile (str): path to service account (SA) keyfile.
-        scopes (list): scopes with which to authorize the SA. Default is
-            ``['cloud-platform']``.
-        loop: asyncio event loop to use for HTTP requests.
+        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
+            to manage authentication for HTTP API requests.
+        session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
+            session to use for sending requests. Defaults to the
+            session object attached to ``auth_client`` if not provided.
     """
-    JWT_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:jwt-bearer'
-    SCOPE_TMPL_URL = 'https://www.googleapis.com/auth/{scope}'
 
-    def __init__(self, keyfile=None, scopes=None, loop=None):
-        self._keydata = self._load_keyfile(keyfile)
-        self.scopes = self._set_scopes(scopes)
-        # NOTE: Anything <3.6, the loop returned isn't actually the
-        #       current running loop but the loop that was configured
-        #       for the current thread. This supports earlier Python3
-        #       versions if we ever want to.
-        self._loop = loop or asyncio.get_event_loop()
-        self._session = aiohttp.ClientSession(loop=self._loop)
-        self._creds = self._load_credentials()
-        self.token = None
-        self.expiry = None  # UTC time
-
-    def _load_keyfile(self, keyfile):
-        try:
-            with open(keyfile, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError as e:
-            msg = f'Keyfile {keyfile} was not found.'
-            logging.error(msg, exc_info=e)
-            raise exceptions.GCPGordonJanitorError(msg)
-        except json.JSONDecodeError as e:
-            msg = f'Keyfile {keyfile} is not valid JSON.'
-            logging.error(msg, exc_info=e)
-            raise exceptions.GCPGordonJanitorError(msg)
-
-    def _set_scopes(self, scopes):
-        if not scopes:
-            scopes = ['cloud-platform']
-        return [self.SCOPE_TMPL_URL.format(scope=s) for s in scopes]
-
-    def _load_credentials(self):
-        # TODO (lynn): FEATURE - load other credentials like app default
-        return service_account.Credentials.from_service_account_info(
-            self._keydata, scopes=self.scopes)
-
-    def _setup_token_request(self):
-        url = self._keydata.get('token_uri')
-        headers = {
-            'Content-type': 'application/x-www-form-urlencoded',
-        }
-        body = {
-            'assertion': self._creds._make_authorization_grant_assertion(),
-            'grant_type': self.JWT_GRANT_TYPE,
-        }
-        body = urllib.parse.urlencode(body)
-        return url, headers, bytes(body.encode('utf-8'))
-
-    async def refresh_token(self):
-        """Refresh oauth access token attached to this HTTP session.
-
-        Raises:
-            exceptions.GCPAuthError: if no token was found in the
-                response.
-            exceptions.GCPHTTPError: if any exception occurred.
-        """
-        url, headers, body = self._setup_token_request()
-
-        logging.debug(REQ_LOG_FMT.format(method='POST', url=url))
-        async with self._session.post(url, headers=headers, data=body) as resp:
-            log_kw = {
-                'method': 'POST',
-                'url': url,
-                'status': resp.status,
-                'reason': resp.reason,
-            }
-            logging.debug(RESP_LOG_FMT.format(**log_kw))
-
-            # avoid leaky abstractions and wrap http errors with our own
-            try:
-                resp.raise_for_status()
-            except aiohttp.ClientResponseError as e:
-                msg = f'Issue connecting to {resp.url.host}: {e}'
-                logging.error(msg, exc_info=e)
-                raise exceptions.GCPHTTPError(msg)
-
-            response = await resp.json()
-            try:
-                self.token = response['access_token']
-            except KeyError:
-                msg = 'No access token in response.'
-                logging.error(msg)
-                raise exceptions.GCPAuthError(msg)
-
-        self.expiry = _client._parse_expiry(response)
+    def __init__(self, auth_client=None, session=None):
+        self._auth_client = auth_client
+        self._session = session or auth_client._session
 
     async def set_valid_token(self):
         """Check for validity of token, and refresh if none or expired."""
         is_valid = False
 
-        if self.token:
+        if self._auth_client.creds.token:
             # Account for a token near expiration
             now = datetime.datetime.utcnow()
             skew = datetime.timedelta(seconds=60)
-            if self.expiry > (now + skew):
+            if self._auth_client.creds.expiry > (now + skew):
                 is_valid = True
 
         if not is_valid:
-            await self.refresh_token()
+            await self._auth_client.refresh_token()
 
     async def request(self, method, url, params=None, body=None,
                       headers=None, **kwargs):
@@ -201,7 +109,9 @@ class AIOGoogleHTTPClient:
         req_headers.update(DEFAULT_REQUEST_HEADERS)
 
         await self.set_valid_token()
-        req_headers.update({'Authorization': f'Bearer {self.token}'})
+        req_headers.update(
+            {'Authorization': f'Bearer {self._auth_client.creds.token}'}
+        )
 
         req_kwargs = {
             'params': params,
