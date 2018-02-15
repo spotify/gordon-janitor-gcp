@@ -20,10 +20,10 @@ record sets from Google Cloud DNS, then publish corrective messages to
 the internal ``changes_channel`` if there are differences.
 
 This client makes use of the asynchronous DNS client as defined in
-:py:mod:`gordon_janitor_gcp.cloud_dns`, and therefore must use
+:py:mod:`gordon_janitor_gcp.gdns_client`, and therefore must use
 service account/JWT authentication (for now).
 
-See :ref:`config` for the required Google DNS configuration.
+See :doc:`config` for the required Google DNS configuration.
 
 .. attention::
 
@@ -59,8 +59,8 @@ import logging
 import attr
 
 from gordon_janitor_gcp import auth
-from gordon_janitor_gcp import cloud_dns
 from gordon_janitor_gcp import exceptions
+from gordon_janitor_gcp import gdns_client
 
 
 class GoogleDNSReconciler:
@@ -128,7 +128,7 @@ class GoogleDNSReconciler:
             'api_version': self.config.get('api_version'),
             'auth_client': auth_client
         }
-        return cloud_dns.AIOGoogleDNSClient(**kwargs)
+        return gdns_client.AIOGoogleDNSClient(**kwargs)
 
     async def done(self):
         """Clean up and notify ``changes_channel`` of no more messages.
@@ -228,7 +228,7 @@ class GoogleDNSReconciler:
                 Cloud DNS API's response.
         """
         desired_rrsets = [
-            cloud_dns.GCPResourceRecordSet(**record) for record in rrsets
+            gdns_client.GCPResourceRecordSet(**record) for record in rrsets
         ]
 
         actual_rrsets = await self.dns_client.get_records_for_zone(zone)

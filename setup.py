@@ -95,7 +95,7 @@ setup(
     packages=PACKAGES,
     entry_points={
         'gordon_janitor.plugins': [
-            'gcp.gdns = gordon_janitor_gcp.reconciler.GoogleDNSReconciler',
+            'gcp.gdns = gordon_janitor_gcp.gdns_reconciler.GoogleDNSReconciler',
         ],
     },
     classifiers=CLASSIFIERS,

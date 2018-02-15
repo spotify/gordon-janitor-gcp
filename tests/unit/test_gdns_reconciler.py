@@ -19,9 +19,9 @@ import asyncio
 import pytest
 
 from gordon_janitor_gcp import auth
-from gordon_janitor_gcp import cloud_dns
 from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp import reconciler
+from gordon_janitor_gcp import gdns_client
+from gordon_janitor_gcp import gdns_reconciler as reconciler
 
 
 @pytest.fixture
@@ -41,11 +41,11 @@ def full_config(minimal_config):
 
 @pytest.fixture
 def dns_client(mocker, monkeypatch):
-    mock = mocker.Mock(cloud_dns.AIOGoogleDNSClient, autospec=True)
+    mock = mocker.Mock(gdns_client.AIOGoogleDNSClient, autospec=True)
     mock._session = mocker.Mock()
     mock._session.close.return_value = True
     monkeypatch.setattr(
-        'gordon_janitor_gcp.cloud_dns.AIOGoogleDNSClient', mock)
+        'gordon_janitor_gcp.gdns_client.AIOGoogleDNSClient', mock)
     return mock
 
 
@@ -62,7 +62,7 @@ def config(fake_keyfile):
 def auth_client(mocker, monkeypatch):
     mock = mocker.Mock(auth.GoogleAuthClient, autospec=True)
     monkeypatch.setattr(
-        'gordon_janitor_gcp.reconciler.auth.GoogleAuthClient', mock)
+        'gordon_janitor_gcp.gdns_reconciler.auth.GoogleAuthClient', mock)
     return mock
 
 
@@ -149,7 +149,8 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
         [coro1, coro2],
         [coro1.done(), coro2.done()]
     ]
-    monkeypatch.setattr('gordon_janitor_gcp.reconciler.asyncio.Task', mock_task)
+    monkeypatch.setattr(
+        'gordon_janitor_gcp.gdns_reconciler.asyncio.Task', mock_task)
 
     await recon_client.done()
 
@@ -170,7 +171,7 @@ async def test_publish_change_messages(recon_client, fake_response_data,
                                        caplog):
     """Publish message to changes queue."""
     rrsets = fake_response_data['rrsets']
-    desired_rrsets = [cloud_dns.GCPResourceRecordSet(**kw) for kw in rrsets]
+    desired_rrsets = [gdns_client.GCPResourceRecordSet(**kw) for kw in rrsets]
 
     await recon_client.publish_change_messages(desired_rrsets)
 
@@ -192,7 +193,7 @@ async def test_validate_rrsets_by_zone(recon_client, fake_response_data, caplog,
         rrsets = fake_response_data['rrsets']
         rrsets[0]['rrdatas'] = ['10.4.5.6']
         return [
-            cloud_dns.GCPResourceRecordSet(**kw) for kw in rrsets
+            gdns_client.GCPResourceRecordSet(**kw) for kw in rrsets
         ]
 
     monkeypatch.setattr(
