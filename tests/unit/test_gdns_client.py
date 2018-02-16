@@ -22,7 +22,7 @@ import pytest
 from aioresponses import aioresponses
 
 from gordon_janitor_gcp import auth
-from gordon_janitor_gcp import cloud_dns
+from gordon_janitor_gcp import gdns_client
 
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
@@ -36,12 +36,12 @@ def test_create_gcp_rrset():
         'rrdatas': ['10.1.2.3'],
         'ttl': 500
     }
-    rrset = cloud_dns.GCPResourceRecordSet(**data)
+    rrset = gdns_client.GCPResourceRecordSet(**data)
     assert data == attr.asdict(rrset)
 
     # default TTL when not provided
     data.pop('ttl')
-    rrset = cloud_dns.GCPResourceRecordSet(**data)
+    rrset = gdns_client.GCPResourceRecordSet(**data)
     data['ttl'] = 300
     assert data == attr.asdict(rrset)
 
@@ -50,7 +50,7 @@ def test_create_gcp_rrset():
         'name': 'test'
     }
     with pytest.raises(TypeError):
-        cloud_dns.GCPResourceRecordSet(**missing_params)
+        gdns_client.GCPResourceRecordSet(**missing_params)
 
 
 def test_dns_client_default(mocker):
@@ -59,7 +59,7 @@ def test_dns_client_default(mocker):
     auth_client.creds = creds
     session = aiohttp.ClientSession()
 
-    client = cloud_dns.AIOGoogleDNSClient(
+    client = gdns_client.AIOGoogleDNSClient(
         'a-project', auth_client, session=session)
 
     assert 'a-project' == client.project
@@ -73,7 +73,7 @@ def client(mocker):
     creds = mocker.Mock()
     auth_client.creds = creds
     session = aiohttp.ClientSession()
-    client = cloud_dns.AIOGoogleDNSClient(
+    client = gdns_client.AIOGoogleDNSClient(
         'a-project', auth_client=auth_client, session=session)
     yield client
     # test teardown
@@ -103,7 +103,7 @@ async def test_get_records_for_zone(fake_response_data, client, caplog,
         records = await client.get_records_for_zone('a-zone')
 
         assert all(
-            [isinstance(r, cloud_dns.GCPResourceRecordSet) for r in records])
+            [isinstance(r, gdns_client.GCPResourceRecordSet) for r in records])
         assert 6 == len(records)
 
     assert 1 == len(caplog.records)

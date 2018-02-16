@@ -18,7 +18,7 @@ calls.
     import aiohttp
 
     from gordon_janitor_gcp import auth
-    from gordon_janitor_gcp import cloud_dns
+    from gordon_janitor_gcp import gdns_client
     from gordon_janitor_gcp import http_client
 
     keyfile = '/path/to/service_account_keyfile.json'
@@ -34,7 +34,7 @@ calls.
         auth_client=auth_client, session=new_session
     )
     # or DNS client
-    client = cloud_dns.AIOGoogleDNSClient(
+    client = gdns_client.AIOGoogleDNSClient(
         project='my-dns-project', auth_client=auth_client,
         session=new_session
     )
@@ -50,7 +50,7 @@ Asynchronous GCP HTTP Client
 GCP Cloud DNS HTTP Client
 -------------------------
 
-.. automodule:: gordon_janitor_gcp.cloud_dns
+.. automodule:: gordon_janitor_gcp.gdns_client
 
 
 GCP Auth Client
@@ -62,4 +62,4 @@ GCP Auth Client
 Reconciler
 ----------
 
-.. automodule:: gordon_janitor_gcp.reconciler
+.. automodule:: gordon_janitor_gcp.gdns_reconciler

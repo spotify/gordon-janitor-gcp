@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import datetime
-import json
 import logging
 import os
 
@@ -29,10 +28,6 @@ from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
-
-
-API_BASE_URL = 'https://example.com'
-API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
 
 
 @pytest.fixture
@@ -52,29 +47,6 @@ def mock_service_acct(mocker, monkeypatch):
     patch = 'gordon_janitor_gcp.auth.service_account.Credentials'
     monkeypatch.setattr(patch, mock_creds)
     return mock_creds
-
-
-@pytest.fixture
-def fake_keyfile_data():
-    return {
-        'type': 'service_account',
-        'project_id': 'a-test-project',
-        'private_key_id': 'yeahright',
-        'private_key': 'nope',
-        'client_email': 'test-key@a-test-project.iam.gserviceaccount.com',
-        'client_id': '12345678910',
-        'auth_uri': f'{API_BASE_URL}/auth',
-        'token_uri': f'{API_BASE_URL}/token',
-        'auth_provider_x509_cert_url': f'{API_BASE_URL}/certs',
-        'client_x509_cert_url': f'{API_BASE_URL}/x509/a-test-project'
-    }
-
-
-@pytest.fixture
-def fake_keyfile(fake_keyfile_data, tmpdir):
-    tmp_keyfile = tmpdir.mkdir('keys').join('fake_keyfile.json')
-    tmp_keyfile.write(json.dumps(fake_keyfile_data))
-    return tmp_keyfile
 
 
 #####
