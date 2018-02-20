@@ -20,8 +20,10 @@ Module for reusable pytest fixtures.
 import json
 import logging
 
+import aiohttp
 import pytest
 
+from gordon_janitor_gcp import auth
 
 API_BASE_URL = 'https://example.com'
 API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
@@ -87,3 +89,40 @@ def fake_keyfile(fake_keyfile_data, tmpdir):
     tmp_keyfile = tmpdir.mkdir('keys').join('fake_keyfile.json')
     tmp_keyfile.write(json.dumps(fake_keyfile_data))
     return tmp_keyfile
+
+
+@pytest.fixture
+def mock_coro(mocker):
+    mock = mocker.Mock()
+
+    async def _coro(*args, **kwargs):
+        return mock(*args, **kwargs)
+
+    return mock, _coro
+
+
+@pytest.fixture
+def fake_auth_client(mocker):
+    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    creds = mocker.Mock()
+    creds.token = '0ldc0ffe3'
+    auth_client.creds = creds
+    auth_client._session = aiohttp.ClientSession()
+    yield auth_client
+    auth_client._session.close()
+
+
+async def _noop():
+    pass
+
+
+@pytest.fixture
+def get_gce_client(mocker, fake_auth_client):
+    client = None
+
+    def _create_client(klass, *args, **kwargs):
+        nonlocal client
+        client = klass(fake_auth_client, *args, **kwargs)
+        mocker.patch.object(client, 'set_valid_token', _noop)
+        return client
+    return _create_client

@@ -30,6 +30,7 @@ To use:
 
 """
 
+import asyncio
 import datetime
 import http.client
 import json
@@ -169,3 +170,59 @@ class AIOGoogleHTTPClient:
             json_callback = json.loads
         response = await self.request(method='get', url=url, **kwargs)
         return json_callback(response)
+
+
+class PagingGoogleClientMixin:
+    """HTTP client base class that extracts data from paginated Google APIs.
+    """
+
+    def parse_response_into_items(self, response, items):
+        """Parse an API response and append the results to ``items``
+
+        Must be implemented by inheriting class.
+
+        Args:
+            response (dict): API json response.
+            items (list): list for collecting parsed results.
+        """
+        raise NotImplementedError(
+            f'{self.__class__.__name__} implement "parse_response_into_items" '
+            'method!')
+
+    async def list_all_items(self, url, params, retries, retry_wait):
+        """Aggregate data from all pages of an API query.
+
+        Args:
+            url (str): Google API endpoint URL.
+            params (dict): URL query parameters.
+            retries (int): Number of times to retry an API call.
+            retry_wait (int): Number of seconds to wait between each retry.
+        Returns:
+            list: parsed query response results.
+        """
+        items = []
+        next_page_token = None
+
+        while True:
+            if next_page_token:
+                params['pageToken'] = next_page_token
+            try:
+                response = await self.get_json(url, params=params)
+            except exceptions.GCPHTTPError as e:
+                base_msg = f'Fetching items from "{url}" failed: {e}, '
+                if retries > 0:
+                    retries -= 1
+                    msg = base_msg + f'RETRYING. {retries} retries left.'
+                    logging.warning(msg)
+                    await asyncio.sleep(retry_wait)
+                    continue
+                else:
+                    msg = base_msg + f'NO RETRIES left, return partial reply'
+                    logging.warning(msg)
+                    return items
+
+            self.parse_response_into_items(response, items)
+            next_page_token = response.get('nextPageToken')
+            if not next_page_token:
+                break
+        return items

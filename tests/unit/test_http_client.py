@@ -25,13 +25,10 @@ from aioresponses import aioresponses
 from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp import http_client
+from tests.unit import conftest
 
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
-
-
-API_BASE_URL = 'https://example.com'
-API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
 
 
 #####
@@ -134,8 +131,8 @@ async def test_request(client, monkeypatch, caplog):
     resp_text = 'ohai'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=200, body=resp_text)
-        resp = await client.request('get', API_URL)
+        mocked.get(conftest.API_URL, status=200, body=resp_text)
+        resp = await client.request('get', conftest.API_URL)
 
     assert resp == resp_text
     assert 1 == mock_set_valid_token_called
@@ -156,9 +153,9 @@ async def test_request_refresh(client, monkeypatch, caplog):
     resp_text = 'ohai'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=200, body=resp_text)
-        resp = await client.request('get', API_URL)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=200, body=resp_text)
+        resp = await client.request('get', conftest.API_URL)
 
     assert resp == resp_text
     assert 2 == mock_set_valid_token_called
@@ -177,11 +174,11 @@ async def test_request_max_refresh_reached(client, monkeypatch, caplog):
     monkeypatch.setattr(client, 'set_valid_token', mock_set_valid_token)
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
         with pytest.raises(exceptions.GCPHTTPError) as e:
-            await client.request('get', API_URL)
+            await client.request('get', conftest.API_URL)
 
         e.match('Issue connecting to example.com:')
 
@@ -220,9 +217,93 @@ async def test_get_json(json_func, exp_resp, client, monkeypatch, caplog):
     resp_json = '{"hello": "world"}'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=200, body=resp_json)
-        resp = await client.get_json(API_URL, json_func)
+        mocked.get(conftest.API_URL, status=200, body=resp_json)
+        resp = await client.get_json(conftest.API_URL, json_func)
 
     assert exp_resp == resp
     assert 1 == mock_set_valid_token_called
     assert 2 == len(caplog.records)
+
+
+#####
+# Tests & fixtures the PagingGoogleClientMixin
+#####
+@pytest.fixture
+def simple_paging_client(mocker, get_gce_client):
+    class TestClient(http_client.PagingGoogleClientMixin):
+        def parse_response_into_items(self, response, items):
+            items.append(response['data'])
+
+        async def get_json(self, url, params=None):
+            return {'data': 'data', 'nextPageToken': 'token'}
+
+    return TestClient()
+
+
+def test_parse_response_into_items_not_implemented():
+    class DummyClient(http_client.PagingGoogleClientMixin):
+        pass
+
+    paging_base = DummyClient()
+    with pytest.raises(NotImplementedError):
+        paging_base.parse_response_into_items(None, [])
+        paging_base._session.close()
+
+
+@pytest.mark.asyncio
+async def test_list_all_items_failure(
+        mocker, mock_coro, simple_paging_client, caplog):
+    """All requests fail so an empty list should be returned."""
+    caplog.set_level(logging.WARNING)
+    sleep_mock, sleep_coro = mock_coro
+    mocker.patch('gordon_janitor_gcp.http_client.asyncio.sleep', sleep_coro)
+    retries = 3
+    retry_wait = 5
+
+    async def get_json(url, params=None):
+        raise exceptions.GCPHTTPError('504 Gateway Timeout')
+
+    mocker.patch.object(simple_paging_client, 'get_json', get_json)
+
+    results = await simple_paging_client.list_all_items(
+        conftest.API_BASE_URL, {},
+        retries=retries,
+        retry_wait=retry_wait)
+    assert results == []
+    expected_sleeps = [mocker.call(retry_wait) for _ in range(retries)]
+    sleep_mock.assert_has_calls(expected_sleeps)
+    assert len(caplog.records) == 4
+
+
+@pytest.mark.asyncio
+async def test_list_all_items_partial_failure(
+        mocker, mock_coro, simple_paging_client, caplog):
+    """Some requests fail so partially populated list should be returned."""
+    caplog.set_level(logging.WARNING)
+    sleep_mock, sleep_coro = mock_coro
+    mocker.patch('gordon_janitor_gcp.http_client.asyncio.sleep', sleep_coro)
+    retries = 3
+    retry_wait = 5
+
+    number_of_calls = 0
+
+    async def get_json(url, params=None):
+        nonlocal number_of_calls
+        # One successful call
+        if number_of_calls < 1:
+            number_of_calls += 1
+            return {'data': 'data', 'nextPageToken': 'token'}
+        else:
+            # second call fails despite retries
+            raise exceptions.GCPHTTPError('504 Gateway Timeout')
+
+    mocker.patch.object(simple_paging_client, 'get_json', get_json)
+
+    results = await simple_paging_client.list_all_items(
+        conftest.API_BASE_URL, {},
+        retries=retries,
+        retry_wait=retry_wait)
+    assert results == ['data']
+    expected_sleeps = [mocker.call(retry_wait) for _ in range(retries)]
+    sleep_mock.assert_has_calls(expected_sleeps)
+    assert len(caplog.records) == 4
