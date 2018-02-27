@@ -71,8 +71,8 @@ class MockDatetime(datetime.datetime):
 @pytest.fixture
 def client(mocker):
     auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client.token = '0ldc0ffe3'
     creds = mocker.Mock()
-    creds.token = '0ldc0ffe3'
     auth_client.creds = creds
     session = aiohttp.ClientSession()
     client = http_client.AIOGoogleHTTPClient(auth_client=auth_client,
@@ -138,7 +138,11 @@ async def test_request(client, monkeypatch, caplog):
         resp = await client.request('get', API_URL)
 
     assert resp == resp_text
+
     assert 1 == mock_set_valid_token_called
+    request = mocked.requests[('get', API_URL)][0]
+    authorization_header = request.kwargs['headers']['Authorization']
+    assert authorization_header == f'Bearer {client._auth_client.token}'
     assert 2 == len(caplog.records)
 
 

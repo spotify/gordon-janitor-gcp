@@ -110,7 +110,7 @@ class AIOGoogleHTTPClient:
 
         await self.set_valid_token()
         req_headers.update(
-            {'Authorization': f'Bearer {self._auth_client.creds.token}'}
+            {'Authorization': f'Bearer {self._auth_client.token}'}
         )
 
         req_kwargs = {
