@@ -63,3 +63,9 @@ Reconciler
 ----------
 
 .. automodule:: gordon_janitor_gcp.gdns_reconciler
+
+
+Publisher
+----------
+
+.. automodule:: gordon_janitor_gcp.gpubsub_publisher

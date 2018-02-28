@@ -17,10 +17,13 @@
 Module for reusable pytest fixtures.
 """
 
+import datetime
 import json
 import logging
 
 import pytest
+
+from gordon_janitor_gcp import auth
 
 
 API_BASE_URL = 'https://example.com'
@@ -87,3 +90,27 @@ def fake_keyfile(fake_keyfile_data, tmpdir):
     tmp_keyfile = tmpdir.mkdir('keys').join('fake_keyfile.json')
     tmp_keyfile.write(json.dumps(fake_keyfile_data))
     return tmp_keyfile
+
+
+# pytest prevents monkeypatching datetime directly
+class MockDatetime(datetime.datetime):
+    @classmethod
+    def utcnow(cls):
+        return datetime.datetime(2018, 1, 1, 11, 30, 0)
+
+
+@pytest.fixture
+def config(fake_keyfile):
+    return {
+        'keyfile': fake_keyfile,
+        'project': 'test-example',
+        'topic': 'a-topic'
+    }
+
+
+@pytest.fixture
+def auth_client(mocker, monkeypatch):
+    mock = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    monkeypatch.setattr(
+        'gordon_janitor_gcp.gpubsub_publisher.auth.GoogleAuthClient', mock)
+    return mock

@@ -25,7 +25,7 @@ from aioresponses import aioresponses
 from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp import http_client
-
+from tests.unit import conftest
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
@@ -61,13 +61,6 @@ def test_http_client_default(provide_session, mocker):
     client._session.close()
 
 
-# pytest prevents monkeypatching datetime directly
-class MockDatetime(datetime.datetime):
-    @classmethod
-    def utcnow(cls):
-        return datetime.datetime(2018, 1, 1, 11, 30, 0)
-
-
 @pytest.fixture
 def client(mocker):
     auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
@@ -78,7 +71,7 @@ def client(mocker):
     client = http_client.AIOGoogleHTTPClient(auth_client=auth_client,
                                              session=session)
     yield client
-    client._session.close()
+    session.close()
 
 
 args = 'token,expiry,exp_mocked_refresh'
@@ -99,7 +92,7 @@ params = [
 async def test_set_valid_token(token, expiry, exp_mocked_refresh, client,
                                monkeypatch):
     """Refresh tokens if invalid or not set."""
-    datetime.datetime = MockDatetime
+    datetime.datetime = conftest.MockDatetime
 
     mock_refresh_token_called = 0
 
