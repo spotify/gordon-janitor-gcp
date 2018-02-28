@@ -21,10 +21,10 @@ import datetime
 import json
 import logging
 
+import aiohttp
 import pytest
 
 from gordon_janitor_gcp import auth
-
 
 API_BASE_URL = 'https://example.com'
 API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
@@ -111,6 +111,37 @@ def config(fake_keyfile):
 @pytest.fixture
 def auth_client(mocker, monkeypatch):
     mock = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    mock.token = '0ldc0ffe3'
+    mock._session = aiohttp.ClientSession()
+    creds = mocker.Mock()
+    mock.creds = creds
     monkeypatch.setattr(
         'gordon_janitor_gcp.gpubsub_publisher.auth.GoogleAuthClient', mock)
-    return mock
+    yield mock
+    mock._session.close()
+
+
+@pytest.fixture
+def mock_coro(mocker):
+    mock = mocker.Mock()
+
+    async def _coro(*args, **kwargs):
+        return mock(*args, **kwargs)
+
+    return mock, _coro
+
+
+async def _noop():
+    pass
+
+
+@pytest.fixture
+def get_gce_client(mocker, auth_client):
+    client = None
+
+    def _create_client(klass, *args, **kwargs):
+        nonlocal client
+        client = klass(auth_client, *args, **kwargs)
+        mocker.patch.object(client, 'set_valid_token', _noop)
+        return client
+    return _create_client

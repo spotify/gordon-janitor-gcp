@@ -30,10 +30,6 @@ from tests.unit import conftest
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
 
-API_BASE_URL = 'https://example.com'
-API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
-
-
 #####
 # Tests for simple client instantiation
 #####
@@ -62,11 +58,7 @@ def test_http_client_default(provide_session, mocker):
 
 
 @pytest.fixture
-def client(mocker):
-    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
-    auth_client.token = '0ldc0ffe3'
-    creds = mocker.Mock()
-    auth_client.creds = creds
+def client(mocker, auth_client):
     session = aiohttp.ClientSession()
     client = http_client.AIOGoogleHTTPClient(auth_client=auth_client,
                                              session=session)
@@ -127,13 +119,13 @@ async def test_request(client, monkeypatch, caplog):
     resp_text = 'ohai'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=200, body=resp_text)
-        resp = await client.request('get', API_URL)
+        mocked.get(conftest.API_URL, status=200, body=resp_text)
+        resp = await client.request('get', conftest.API_URL)
 
     assert resp == resp_text
 
     assert 1 == mock_set_valid_token_called
-    request = mocked.requests[('get', API_URL)][0]
+    request = mocked.requests[('get', conftest.API_URL)][0]
     authorization_header = request.kwargs['headers']['Authorization']
     assert authorization_header == f'Bearer {client._auth_client.token}'
     assert 2 == len(caplog.records)
@@ -153,9 +145,9 @@ async def test_request_refresh(client, monkeypatch, caplog):
     resp_text = 'ohai'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=200, body=resp_text)
-        resp = await client.request('get', API_URL)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=200, body=resp_text)
+        resp = await client.request('get', conftest.API_URL)
 
     assert resp == resp_text
     assert 2 == mock_set_valid_token_called
@@ -174,11 +166,11 @@ async def test_request_max_refresh_reached(client, monkeypatch, caplog):
     monkeypatch.setattr(client, 'set_valid_token', mock_set_valid_token)
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=401)
-        mocked.get(API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
+        mocked.get(conftest.API_URL, status=401)
         with pytest.raises(exceptions.GCPHTTPError) as e:
-            await client.request('get', API_URL)
+            await client.request('get', conftest.API_URL)
 
         e.match('Issue connecting to example.com:')
 
@@ -217,9 +209,33 @@ async def test_get_json(json_func, exp_resp, client, monkeypatch, caplog):
     resp_json = '{"hello": "world"}'
 
     with aioresponses() as mocked:
-        mocked.get(API_URL, status=200, body=resp_json)
-        resp = await client.get_json(API_URL, json_func)
+        mocked.get(conftest.API_URL, status=200, body=resp_json)
+        resp = await client.get_json(conftest.API_URL, json_func)
 
     assert exp_resp == resp
     assert 1 == mock_set_valid_token_called
     assert 2 == len(caplog.records)
+
+
+#####
+# Tests & fixtures the GPagintorMixin
+#####
+@pytest.mark.asyncio
+@pytest.mark.parametrize('max_pages', [1, 2])
+async def test_list_all(mocker, max_pages):
+    number_of_calls = 0
+
+    class TestClient(http_client.GPaginatorMixin):
+        async def get_json(self, url, params=None):
+            nonlocal number_of_calls
+            if number_of_calls < (max_pages - 1):
+                number_of_calls += 1
+                return {'data': 'data', 'nextPageToken': 'token'}
+            # last page doesn't include a nextPageToken
+            return {'data': 'final page'}
+
+    simple_paging_client = TestClient()
+
+    results = await simple_paging_client.list_all(
+        conftest.API_BASE_URL, {})
+    assert max_pages == len(results)
