@@ -67,11 +67,17 @@ GCP Cloud DNS HTTP Client
     :members:
 
 
-GCE Clients
+GCRM Client
 -----------
 
-.. automodule:: gordon_janitor_gcp.clients.gcp
+.. automodule:: gordon_janitor_gcp.clients.gcrm
 .. autoclass:: gordon_janitor_gcp.GCRMClient
     :members:
+
+
+GCE Client
+----------
+
+.. automodule:: gordon_janitor_gcp.clients.gce
 .. autoclass:: gordon_janitor_gcp.GCEClient
     :members:

@@ -50,63 +50,7 @@ import logging
 from gordon_janitor_gcp.clients import http
 
 
-__all__ = ('GCRMClient', 'GCEClient',)
-
-
-class GCRMClient(http.AIOConnection,
-                 http.GPaginatorMixin):
-    """Async client to interact with Google Cloud Resource Manager API.
-
-    You can find the endpoint documentation
-    `here <https://cloud.google.com/resource-manager/
-    reference/rest/#rest-resource-v1projects>`__.
-
-    Attributes:
-        BASE_URL (str): Base endpoint URL.
-
-    Args:
-        auth_client (.GAuthClient):
-            client to manage authentication for HTTP API requests.
-        session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
-            session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
-        api_version (str): version of API endpoint to send requests to.
-    """
-    BASE_URL = 'https://cloudresourcemanager.googleapis.com'
-
-    def __init__(self, auth_client=None, session=None, api_version='v1'):
-        super().__init__(auth_client=auth_client, session=session)
-        self.api_version = api_version
-
-    def _parse_rsps_for_projects(self, responses):
-        projects = []
-        for response in responses:
-            for project in response.get('projects', []):
-                projects.append(project)
-        return projects
-
-    async def list_all_active_projects(self, page_size=1000):
-        """Get all active projects.
-
-        You can find the endpoint documentation
-        `here <https://cloud.google.com/resource-manager/
-        reference/rest/v1/projects/list>`__.
-
-        Args:
-            page_size (int): hint for the client to only retrieve up to this
-                number of results per API call.
-        Returns:
-            list(dicts): all active projects
-        """
-        url = f'{self.BASE_URL}/{self.api_version}/projects'
-        params = {'pageSize': page_size}
-
-        responses = await self.list_all(url, params)
-        projects = self._parse_rsps_for_projects(responses)
-        return [
-            project for project in projects
-            if project.get('lifecycleState', '').lower() == 'active'
-        ]
+__all__ = ('GCEClient',)
 
 
 class GCEClient(http.AIOConnection,
