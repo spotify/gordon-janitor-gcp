@@ -107,3 +107,41 @@ def test_get_publisher_topic_exists(config, auth_client, publisher_client,
     assert exp_topic == client.topic
 
     client.publisher.create_topic.assert_called_once_with(exp_topic)
+
+
+@pytest.mark.parametrize('timeout,exp_timeout', [
+    (None, 60),
+    (30, 30),
+])
+def test_get_reconciler(timeout, exp_timeout, config, auth_client, monkeypatch):
+    """Happy path to initialize a Reconciler client."""
+    rrset_chnl = asyncio.Queue()
+    changes_chnl = asyncio.Queue()
+
+    if timeout:
+        config['cleanup_timeout'] = timeout
+
+    client = plugins.get_reconciler(config, rrset_chnl, changes_chnl)
+
+    assert exp_timeout == client.cleanup_timeout
+    assert client.dns_client is not None
+    assert rrset_chnl == client.rrset_channel
+    assert changes_chnl == client.changes_channel
+
+
+@pytest.mark.parametrize('key,error_msg', [
+    ('keyfile', 'The path to a Service Account JSON keyfile is required '),
+    ('project', 'The GCP project where Cloud DNS is located is required.')
+])
+def test_get_reconciler_config_raises(key, error_msg, config, auth_client,
+                                      caplog):
+    """Raise with improper configuration."""
+    rrset_chnl = asyncio.Queue()
+    changes_chnl = asyncio.Queue()
+    config.pop(key)
+
+    with pytest.raises(exceptions.GCPConfigError) as e:
+        plugins.get_reconciler(config, rrset_chnl, changes_chnl)
+
+    e.match(error_msg)
+    assert 1 == len(caplog.records)

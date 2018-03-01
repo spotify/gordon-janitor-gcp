@@ -18,7 +18,6 @@ import asyncio
 
 import pytest
 
-from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp.clients import auth
 from gordon_janitor_gcp.clients import gdns
 from gordon_janitor_gcp.plugins import reconciler
@@ -45,7 +44,7 @@ def dns_client(mocker, monkeypatch):
     mock._session = mocker.Mock()
     mock._session.close.return_value = True
     monkeypatch.setattr(
-        'gordon_janitor_gcp.plugins.gdns.GDNSClient', mock)
+        'gordon_janitor_gcp.plugins.reconciler.gdns.GDNSClient', mock)
     return mock
 
 
@@ -74,43 +73,22 @@ params = [
 
 
 @pytest.mark.parametrize(args, params)
-def test_reconciler_default(timeout, exp_timeout, config, auth_client):
+def test_reconciler_default(timeout, exp_timeout, config, dns_client):
     rrset_chnl, changes_chnl = asyncio.Queue(), asyncio.Queue()
 
     if timeout:
         config['cleanup_timeout'] = timeout
 
     recon_client = reconciler.GDNSReconciler(
-        config, rrset_chnl, changes_chnl)
+        config, dns_client, rrset_chnl, changes_chnl)
     assert exp_timeout == recon_client.cleanup_timeout
     assert recon_client.dns_client is not None
-    assert config is recon_client.config
-
-
-args = 'config_key,exp_msg'
-params = [
-    ('keyfile', 'The path to a Service Account JSON keyfile is required '),
-    ('project', 'The GCP project where Cloud DNS is located is required.')
-]
-
-
-@pytest.mark.parametrize(args, params)
-def test_reconciler_default_raises(config_key, exp_msg, auth_client, config,
-                                   caplog):
-    config.pop(config_key)
-    rrset_chnl, changes_chnl = asyncio.Queue(), asyncio.Queue()
-
-    with pytest.raises(exceptions.GCPConfigError) as e:
-        reconciler.GDNSReconciler(config, rrset_chnl, changes_chnl)
-
-    e.match(exp_msg)
-    assert 1 == len(caplog.records)
 
 
 @pytest.fixture
-async def recon_client(config, auth_client):
+async def recon_client(config, dns_client):
     rch, chch = asyncio.Queue(), asyncio.Queue()
-    recon_client = reconciler.GDNSReconciler(config, rch, chch)
+    recon_client = reconciler.GDNSReconciler(config, dns_client, rch, chch)
     yield recon_client
     while not chch.empty():
         await chch.get()

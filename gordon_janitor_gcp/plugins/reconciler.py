@@ -58,6 +58,8 @@ import asyncio
 import logging
 
 import attr
+import zope.interface
+from gordon_janitor import interfaces
 
 from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp.clients import auth
@@ -67,6 +69,36 @@ from gordon_janitor_gcp.clients import gdns
 __all__ = ('GDNSReconciler',)
 
 
+def _init_dns_client(auth_client, config):
+    kwargs = {
+        'project': config['project'],
+        'api_version': config.get('api_version'),
+        'auth_client': auth_client
+    }
+    return gdns.GDNSClient(**kwargs)
+
+
+def _init_dns_auth(config):
+    return auth.GAuthClient(
+        keyfile=config['keyfile'], scopes=config.get('scopes'))
+
+
+def _validate_dns_config(config):
+    # req keys: keyfile, project, topic
+    # TODO (lynn): keyfile won't be required once we support other
+    #              auth methods
+    if not config.get('keyfile'):
+        msg = ('The path to a Service Account JSON keyfile is required to '
+               'authenticate for Google Cloud Pub/Sub.')
+        logging.error(msg)
+        raise exceptions.GCPConfigError(msg)
+    if not config.get('project'):
+        msg = 'The GCP project where Cloud DNS is located is required.'
+        logging.error(msg)
+        raise exceptions.GCPConfigError(msg)
+
+
+@zope.interface.implementer(interfaces.IReconciler)
 class GDNSReconciler:
     """Validate current records in DNS against desired source of truth.
 
@@ -83,6 +115,8 @@ class GDNSReconciler:
 
     Args:
         config (dict): Google Cloud DNS-related configuration.
+        dns_client (.GDNSClient): client to interact with Google Cloud
+            DNS API.
         rrset_channel (asyncio.Queue): queue from which to consume
             record set messages to validate.
         changes_channel (asyncio.Queue): queue to publish message to
@@ -91,48 +125,12 @@ class GDNSReconciler:
 
     _ASYNC_METHODS = ['publish_change_messages', 'validate_rrsets_by_zone']
 
-    def __init__(self, config, rrset_channel=None, changes_channel=None, **kw):
-        self.config = config
+    def __init__(self, config, dns_client, rrset_channel=None,
+                 changes_channel=None, **kw):
         self.rrset_channel = rrset_channel
         self.changes_channel = changes_channel
         self.cleanup_timeout = config.get('cleanup_timeout', 60)
-        self.dns_client = None  # set in _init
-        self._init()
-
-    def _init(self):
-        auth_client = self._init_auth()
-        self.dns_client = self._init_dns_client(auth_client)
-
-    def _init_auth(self):
-        # TODO (lynn): keyfile won't be required once we support other
-        #              auth methods
-        try:
-            keyfile = self.config['keyfile']
-        except KeyError:
-            msg = ('The path to a Service Account JSON keyfile is required '
-                   'to authenticate for Google Cloud DNS.')
-            logging.error(msg)
-            raise exceptions.GCPConfigError(msg)
-
-        scopes = self.config.get('scopes')
-        return auth.GAuthClient(keyfile=keyfile, scopes=scopes)
-
-    def _init_dns_client(self, auth_client):
-        # TODO: (FEATURE) maybe support inference of project based
-        #       on os.environ or keyfile
-        try:
-            project = self.config['project']
-        except KeyError:
-            msg = 'The GCP project where Cloud DNS is located is required.'
-            logging.error(msg)
-            raise exceptions.GCPConfigError(msg)
-
-        kwargs = {
-            'project': project,
-            'api_version': self.config.get('api_version'),
-            'auth_client': auth_client
-        }
-        return gdns.GDNSClient(**kwargs)
+        self.dns_client = dns_client
 
     async def done(self):
         """Clean up & notify :obj:`changes_channel` of no more messages.

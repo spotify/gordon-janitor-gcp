@@ -16,13 +16,15 @@
 
 # Mainly for easier documentation reading
 from gordon_janitor_gcp.plugins import publisher
+from gordon_janitor_gcp.plugins import reconciler
 from gordon_janitor_gcp.plugins.publisher import GPubsubPublisher  # noqa: F401
-from gordon_janitor_gcp.plugins.reconciler import *  # noqa: F403
+from gordon_janitor_gcp.plugins.reconciler import GDNSReconciler  # noqa: F401
 
 
 __all__ = (
     reconciler.__all__ +  # noqa: F405
-    ('get_publisher', 'GPubsubPublisher')
+    ('get_publisher', 'GPubsubPublisher') +
+    ('get_reconciler', 'GDNSReconciler')
 )
 
 
@@ -47,3 +49,28 @@ def get_publisher(config, changes_channel, **kw):
     pubsub_client = publisher._init_pubsub_client(auth_client, config)
     return publisher.GPubsubPublisher(
         config, pubsub_client, changes_channel, **kw)
+
+
+def get_reconciler(config, rrset_channel, changes_channel, **kw):
+    """Get a GDNSReconciler client.
+
+    A factory function that validates configuration, creates an auth
+    and :class:`GDNSClient` instance, and returns a GDNSReconciler
+    provider.
+
+    Args:
+        config (dict): Google Cloud Pub/Sub-related configuration.
+        rrset_channel (asyncio.Queue): queue from which to consume
+            record set messages to validate.
+        changes_channel (asyncio.Queue): queue to publish message to
+            make corrections to Cloud DNS.
+        kw (dict): Additional keyword arguments to pass to the
+            Publisher.
+    Returns:
+        A :class:`GDNSReconciler` instance.
+    """
+    reconciler._validate_dns_config(config)
+    auth_client = reconciler._init_dns_auth(config)
+    dns_client = reconciler._init_dns_client(auth_client, config)
+    return reconciler.GDNSReconciler(
+        config, dns_client, rrset_channel, changes_channel, **kw)
