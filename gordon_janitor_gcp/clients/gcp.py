@@ -17,7 +17,7 @@
 Client classes to retrieve project and instance data from GCE.
 
 These clients use the asynchronous HTTP client defined in
-:class:`.AIOGoogleHTTPClient` and require service
+:class:`.AIOConnection` and require service
 account or JWT-token credentials for authentication.
 
 To use:
@@ -33,7 +33,7 @@ To use:
 
     async def main():
         session = aiohttp.ClientSession()
-        auth_client = gordon_janitor_gcp.GoogleAuthClient(
+        auth_client = gordon_janitor_gcp.GAuthClient(
             keyfile='/path/to/keyfile', session=session)
         client = gordon_janitor_gcp.GCEClient(auth_client, session)
         instances = await client.list_instances('project-id')
@@ -53,7 +53,7 @@ from gordon_janitor_gcp.clients import http
 __all__ = ('GCRMClient', 'GCEClient',)
 
 
-class GCRMClient(http.AIOGoogleHTTPClient,
+class GCRMClient(http.AIOConnection,
                  http.GPaginatorMixin):
     """Async client to interact with Google Cloud Resource Manager API.
 
@@ -65,7 +65,7 @@ class GCRMClient(http.AIOGoogleHTTPClient,
         BASE_URL (str): Base endpoint URL.
 
     Args:
-        auth_client (.GoogleAuthClient):
+        auth_client (.GAuthClient):
             client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
@@ -109,7 +109,7 @@ class GCRMClient(http.AIOGoogleHTTPClient,
         ]
 
 
-class GCEClient(http.AIOGoogleHTTPClient,
+class GCEClient(http.AIOConnection,
                 http.GPaginatorMixin):
     """Async client to interact with Google Cloud Compute API.
 
@@ -117,7 +117,7 @@ class GCEClient(http.AIOGoogleHTTPClient,
         BASE_URL (str): base compute endpoint URL.
 
     Args:
-        auth_client (.GoogleAuthClient):
+        auth_client (.GAuthClient):
             client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the

@@ -15,8 +15,8 @@
 # limitations under the License.
 """
 Module to interact with Google APIs via asynchronous HTTP calls.
-:class:`.AIOGoogleHTTPClient` is meant to be used/inherited by other
-product-specific clients (e.g. :class:`.AIOGoogleDNSClient`) as it
+:class:`.AIOConnection` is meant to be used/inherited by other
+product-specific clients (e.g. :class:`.GDNSClient`) as it
 handles Google authentication and automatic refresh of tokens.
 
 .. todo::
@@ -30,10 +30,10 @@ To use:
     import gordon_janitor_gcp
 
     keyfile = '/path/to/service_account_keyfile.json'
-    auth_client = gordon_janitor_gcp.GoogleAuthClient(
+    auth_client = gordon_janitor_gcp.GAuthClient(
         keyfile=keyfile)
 
-    client = AIOGoogleHTTPClient(auth_client=auth_client)
+    client = AIOConnection(auth_client=auth_client)
     resp = await client.request('get', 'http://api.example.com/foo')
 
 """
@@ -47,7 +47,7 @@ import aiohttp
 
 from gordon_janitor_gcp import exceptions
 
-__all__ = ('AIOGoogleHTTPClient',)
+__all__ = ('AIOConnection',)
 
 
 DEFAULT_REQUEST_HEADERS = {
@@ -65,11 +65,11 @@ REQ_LOG_FMT = 'Request: "{method} {url}"'
 RESP_LOG_FMT = 'Response: "{method} {url}" {status} {reason}'
 
 
-class AIOGoogleHTTPClient:
+class AIOConnection:
     """Async HTTP client to Google APIs with service-account-based auth.
 
     Args:
-        auth_client (.GoogleAuthClient): client to manage authentication
+        auth_client (.GAuthClient): client to manage authentication
             for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the

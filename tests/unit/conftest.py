@@ -110,13 +110,13 @@ def config(fake_keyfile):
 
 @pytest.fixture
 def auth_client(mocker, monkeypatch):
-    mock = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    mock = mocker.Mock(auth.GAuthClient, autospec=True)
     mock.token = '0ldc0ffe3'
     mock._session = aiohttp.ClientSession()
     creds = mocker.Mock()
     mock.creds = creds
     monkeypatch.setattr(
-        'gordon_janitor_gcp.plugins.publisher.auth.GoogleAuthClient', mock)
+        'gordon_janitor_gcp.plugins.publisher.auth.GAuthClient', mock)
     yield mock
     mock._session.close()
 

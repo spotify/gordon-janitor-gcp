@@ -69,7 +69,7 @@ params = [
 def test_auth_client_default(scopes, provide_session, provide_loop, event_loop,
                              fake_keyfile, fake_keyfile_data, mock_service_acct,
                              session):
-    """GoogleAuthClient is created with expected attributes."""
+    """GAuthClient is created with expected attributes."""
     kwargs = {
         'keyfile': fake_keyfile,
         'scopes': scopes,
@@ -79,7 +79,7 @@ def test_auth_client_default(scopes, provide_session, provide_loop, event_loop,
     if provide_loop:
         kwargs['loop'] = event_loop
 
-    client = auth.GoogleAuthClient(**kwargs)
+    client = auth.GAuthClient(**kwargs)
 
     assert fake_keyfile_data == client._keydata
 
@@ -110,7 +110,7 @@ def test_auth_client_raises_json(tmpdir, caplog):
     tmp_keyfile.write('broken json')
 
     with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        auth.GoogleAuthClient(keyfile=tmp_keyfile)
+        auth.GAuthClient(keyfile=tmp_keyfile)
 
     e.match(f'Keyfile {tmp_keyfile} is not valid JSON.')
     assert 1 == len(caplog.records)
@@ -122,7 +122,7 @@ def test_auth_client_raises_not_found(tmpdir, caplog):
     no_keyfile = os.path.join(tmp_keydir, 'not-existent.json')
 
     with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        auth.GoogleAuthClient(keyfile=no_keyfile)
+        auth.GAuthClient(keyfile=no_keyfile)
 
     e.match(f'Keyfile {no_keyfile} was not found.')
     assert 1 == len(caplog.records)
@@ -141,7 +141,7 @@ def mock_parse_expiry(mocker, monkeypatch):
 
 @pytest.fixture
 def client(fake_keyfile, mock_service_acct, session, event_loop):
-    return auth.GoogleAuthClient(keyfile=fake_keyfile, session=session)
+    return auth.GAuthClient(keyfile=fake_keyfile, session=session)
 
 
 @pytest.mark.asyncio

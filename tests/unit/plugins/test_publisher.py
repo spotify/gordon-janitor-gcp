@@ -69,7 +69,7 @@ async def test_done(exp_log_records, timeout, side_effect, kwargs,
         mock_msg2.done.side_effect = side_effect
 
     kwargs['config']['cleanup_timeout'] = timeout
-    client = publisher.GooglePubsubPublisher(**kwargs)
+    client = publisher.GPubsubPublisher(**kwargs)
     client._messages.add(mock_msg1)
     client._messages.add(mock_msg2)
 
@@ -94,7 +94,7 @@ async def test_publish(kwargs, publisher_client, auth_client, mocker,
     exp_topic = f'projects/{project}/topics/{topic}'
     kwargs['config']['topic'] = exp_topic
 
-    client = publisher.GooglePubsubPublisher(**kwargs)
+    client = publisher.GPubsubPublisher(**kwargs)
 
     msg1 = {'message': 'one'}
 
@@ -124,7 +124,7 @@ async def test_start(raises, exp_log_records, kwargs, publisher_client,
     await kwargs['changes_channel'].put(msg1)
     await kwargs['changes_channel'].put(None)
 
-    client = publisher.GooglePubsubPublisher(**kwargs)
+    client = publisher.GPubsubPublisher(**kwargs)
     await client.start()
 
     publisher_client.publish.assert_called_once()

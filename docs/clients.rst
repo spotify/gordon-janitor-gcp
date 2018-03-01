@@ -9,8 +9,8 @@ HTTP Sessions
 By default, the HTTP session used for getting credentials is reused for
 API calls (recommended if there are many). If this is not desired, you
 can pass in your own :class:`aiohttp.ClientSession` instance into
-:class:`AIOGoogleDNSClient` or :class:`AIOGoogleHTTPClient`. The
-auth client :class:`GoogleAuthClient` may also take an explicit
+:class:`GDNSClient` or :class:`AIOConnection`. The
+auth client :class:`GAuthClient` may also take an explicit
 session object, but is not required to assert a different HTTP session
 is used for the API calls.
 
@@ -21,18 +21,18 @@ is used for the API calls.
 
     keyfile = '/path/to/service_account_keyfile.json'
     session = aiohttp.ClientSession()  # optional
-    auth_client = gordon_janitor_gcp.GoogleAuthClient(
+    auth_client = gordon_janitor_gcp.GAuthClient(
         keyfile=keyfile, session=session
     )
 
     new_session = aiohttp.ClientSession()
 
     # basic HTTP client
-    client = gordon_janitor_gcp.AIOGoogleHTTPClient(
+    client = gordon_janitor_gcp.AIOConnection(
         auth_client=auth_client, session=new_session
     )
     # or DNS client
-    client = gordon_janitor_gcp.AIOGoogleDNSClient(
+    client = gordon_janitor_gcp.GDNSClient(
         project='my-dns-project', auth_client=auth_client,
         session=new_session
     )
@@ -45,7 +45,7 @@ Asynchronous GCP HTTP Client
 ----------------------------
 
 .. automodule:: gordon_janitor_gcp.clients.http
-.. autoclass:: gordon_janitor_gcp.AIOGoogleHTTPClient
+.. autoclass:: gordon_janitor_gcp.AIOConnection
     :members:
 
 
@@ -53,7 +53,7 @@ GCP Auth Client
 ---------------
 
 .. automodule:: gordon_janitor_gcp.clients.auth
-.. autoclass:: gordon_janitor_gcp.GoogleAuthClient
+.. autoclass:: gordon_janitor_gcp.GAuthClient
     :members:
 
 
@@ -61,7 +61,7 @@ GCP Cloud DNS HTTP Client
 -------------------------
 
 .. automodule:: gordon_janitor_gcp.clients.gdns
-.. autoclass:: gordon_janitor_gcp.AIOGoogleDNSClient
+.. autoclass:: gordon_janitor_gcp.GDNSClient
     :members:
 .. autoclass:: gordon_janitor_gcp.GCPResourceRecordSet
     :members:

@@ -16,14 +16,14 @@ Reconciler
 ----------
 
 .. automodule:: gordon_janitor_gcp.plugins.reconciler
-.. autoclass:: gordon_janitor_gcp.GoogleDNSReconciler
+.. autoclass:: gordon_janitor_gcp.GDNSReconciler
     :members:
 
 Publisher
 ----------
 
 .. automodule:: gordon_janitor_gcp.plugins.publisher
-.. autoclass:: gordon_janitor_gcp.GooglePubsubPublisher
+.. autoclass:: gordon_janitor_gcp.GPubsubPublisher
     :members:
 
 

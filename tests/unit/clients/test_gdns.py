@@ -54,12 +54,12 @@ def test_create_gcp_rrset():
 
 
 def test_dns_client_default(mocker):
-    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient, autospec=True)
     creds = mocker.Mock()
     auth_client.creds = creds
     session = aiohttp.ClientSession()
 
-    client = gdns.AIOGoogleDNSClient(
+    client = gdns.GDNSClient(
         'a-project', auth_client, session=session)
 
     assert 'a-project' == client.project
@@ -69,11 +69,11 @@ def test_dns_client_default(mocker):
 
 @pytest.fixture
 def client(mocker):
-    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient, autospec=True)
     creds = mocker.Mock()
     auth_client.creds = creds
     session = aiohttp.ClientSession()
-    client = gdns.AIOGoogleDNSClient(
+    client = gdns.GDNSClient(
         'a-project', auth_client=auth_client, session=session)
     yield client
     # test teardown

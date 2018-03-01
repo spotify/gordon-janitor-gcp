@@ -20,7 +20,7 @@ record sets from Google Cloud DNS, then publish corrective messages to
 the internal ``changes_channel`` if there are differences.
 
 This client makes use of the asynchronous DNS client as defined in
-:class:`.AIOGoogleDNSClient`, and therefore must use
+:class:`.GDNSClient`, and therefore must use
 service account/JWT authentication (for now).
 
 See :doc:`config` for the required Google DNS configuration.
@@ -44,7 +44,7 @@ To use:
     rrset_chnl = asyncio.Queue()
     changes_chnl = asyncio.Queue()
 
-    reconciler = gordon_janitor_gcp.GoogleDNSReconciler(
+    reconciler = gordon_janitor_gcp.GDNSReconciler(
         config, rrset_chnl, changes_chnl)
 
     loop = asyncio.get_event_loop()
@@ -64,13 +64,13 @@ from gordon_janitor_gcp.clients import auth
 from gordon_janitor_gcp.clients import gdns
 
 
-__all__ = ('GoogleDNSReconciler',)
+__all__ = ('GDNSReconciler',)
 
 
-class GoogleDNSReconciler:
+class GDNSReconciler:
     """Validate current records in DNS against desired source of truth.
 
-    :class:`.GoogleDNSReconciler` will create a change message for the
+    :class:`.GDNSReconciler` will create a change message for the
     configured publisher client plugin to consume if there is a
     discrepancy between records in Google Cloud DNS and the desired
     state.
@@ -115,7 +115,7 @@ class GoogleDNSReconciler:
             raise exceptions.GCPConfigError(msg)
 
         scopes = self.config.get('scopes')
-        return auth.GoogleAuthClient(keyfile=keyfile, scopes=scopes)
+        return auth.GAuthClient(keyfile=keyfile, scopes=scopes)
 
     def _init_dns_client(self, auth_client):
         # TODO: (FEATURE) maybe support inference of project based
@@ -132,7 +132,7 @@ class GoogleDNSReconciler:
             'api_version': self.config.get('api_version'),
             'auth_client': auth_client
         }
-        return gdns.AIOGoogleDNSClient(**kwargs)
+        return gdns.GDNSClient(**kwargs)
 
     async def done(self):
         """Clean up & notify :obj:`changes_channel` of no more messages.

@@ -71,7 +71,7 @@ from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp.clients import auth
 
 
-__all__ = ('get_publisher', 'GooglePubsubPublisher',)
+__all__ = ('get_publisher', 'GPubsubPublisher',)
 
 
 def _init_pubsub_client(auth_client, config):
@@ -105,7 +105,7 @@ def _init_pubsub_auth(config):
         # creating a dummy `session` as the pubsub.PublisherClient never
         # uses it but without it aiohttp will complain about an unclosed
         # client session that would otherwise be made by default
-        auth_client = auth.GoogleAuthClient(
+        auth_client = auth.GAuthClient(
             keyfile=config['keyfile'], scopes=scopes, session='noop')
     return auth_client
 
@@ -135,7 +135,7 @@ def _validate_pubsub_config(config):
 
 
 def get_publisher(config, changes_channel, **kw):
-    """Get a GooglePubsubPublisher client.
+    """Get a GPubsubPublisher client.
 
     A factory function that validates configuration, creates an auth
     and pubsub API client, and returns a Google Pub/Sub Publisher
@@ -148,16 +148,16 @@ def get_publisher(config, changes_channel, **kw):
         kw (dict): Additional keyword arguments to pass to the
             Publisher.
     Returns:
-        A :class:`GooglePubsubPublisher` instance.
+        A :class:`GPubsubPublisher` instance.
     """
     _validate_pubsub_config(config)
     auth_client = _init_pubsub_auth(config)
     pubsub_client = _init_pubsub_client(auth_client, config)
-    return GooglePubsubPublisher(config, pubsub_client, changes_channel, **kw)
+    return GPubsubPublisher(config, pubsub_client, changes_channel, **kw)
 
 
 @zope.interface.implementer(interfaces.IPublisher)
-class GooglePubsubPublisher:
+class GPubsubPublisher:
     """Client to publish change messages to Google Pub/Sub.
 
     Args:

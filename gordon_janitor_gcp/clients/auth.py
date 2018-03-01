@@ -17,7 +17,7 @@
 Module to create a client interacting with Google Cloud authentication.
 
 An instantiated client is needed for interacting with any of the Google
-APIs via the :class:`.AIOGoogleHTTPClient`.
+APIs via the :class:`.AIOConnection`.
 
 Only service account (JSON Web Tokens/JWT) authentication is currently
 supported. To setup a service account, follow `Google's docs <https://
@@ -31,7 +31,7 @@ To use:
     >>> import google_janitor_gcp
     >>> loop = asyncio.get_event_loop()
     >>> keyfile = '/path/to/service_account_keyfile.json'
-    >>> auth_client = google_janitor_gcp.GoogleAuthClient(
+    >>> auth_client = google_janitor_gcp.GAuthClient(
     ...   keyfile=keyfile)
     >>> auth_clientcreds.token is None
     True
@@ -57,10 +57,10 @@ REQ_LOG_FMT = 'Request: "{method} {url}"'
 RESP_LOG_FMT = 'Response: "{method} {url}" {status} {reason}'
 
 
-__all__ = ('GoogleAuthClient', )
+__all__ = ('GAuthClient', )
 
 
-class GoogleAuthClient:
+class GAuthClient:
     """Async client to authenticate against Google Cloud APIs.
 
     Attributes:

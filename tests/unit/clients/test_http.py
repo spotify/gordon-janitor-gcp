@@ -35,16 +35,16 @@ logging.getLogger('asyncio').setLevel(logging.WARNING)
 #####
 @pytest.mark.parametrize('provide_session', [True, False])
 def test_http_client_default(provide_session, mocker):
-    """AIOGoogleHTTPClient is created with expected attributes."""
+    """AIOConnection is created with expected attributes."""
     session = None
     if provide_session:
         session = aiohttp.ClientSession()
 
-    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient, autospec=True)
     auth_client._session = aiohttp.ClientSession()
     creds = mocker.Mock()
     auth_client.creds = creds
-    client = http.AIOGoogleHTTPClient(auth_client=auth_client, session=session)
+    client = http.AIOConnection(auth_client=auth_client, session=session)
 
     if provide_session:
         assert session is client._session
@@ -59,7 +59,7 @@ def test_http_client_default(provide_session, mocker):
 @pytest.fixture
 def client(mocker, auth_client):
     session = aiohttp.ClientSession()
-    client = http.AIOGoogleHTTPClient(auth_client=auth_client, session=session)
+    client = http.AIOConnection(auth_client=auth_client, session=session)
     yield client
     session.close()
 

@@ -41,11 +41,11 @@ def full_config(minimal_config):
 
 @pytest.fixture
 def dns_client(mocker, monkeypatch):
-    mock = mocker.Mock(gdns.AIOGoogleDNSClient, autospec=True)
+    mock = mocker.Mock(gdns.GDNSClient, autospec=True)
     mock._session = mocker.Mock()
     mock._session.close.return_value = True
     monkeypatch.setattr(
-        'gordon_janitor_gcp.plugins.gdns.AIOGoogleDNSClient', mock)
+        'gordon_janitor_gcp.plugins.gdns.GDNSClient', mock)
     return mock
 
 
@@ -60,9 +60,9 @@ def config(fake_keyfile):
 
 @pytest.fixture
 def auth_client(mocker, monkeypatch):
-    mock = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    mock = mocker.Mock(auth.GAuthClient, autospec=True)
     monkeypatch.setattr(
-        'gordon_janitor_gcp.plugins.reconciler.auth.GoogleAuthClient', mock)
+        'gordon_janitor_gcp.plugins.reconciler.auth.GAuthClient', mock)
     return mock
 
 
@@ -80,7 +80,7 @@ def test_reconciler_default(timeout, exp_timeout, config, auth_client):
     if timeout:
         config['cleanup_timeout'] = timeout
 
-    recon_client = reconciler.GoogleDNSReconciler(
+    recon_client = reconciler.GDNSReconciler(
         config, rrset_chnl, changes_chnl)
     assert exp_timeout == recon_client.cleanup_timeout
     assert recon_client.dns_client is not None
@@ -101,7 +101,7 @@ def test_reconciler_default_raises(config_key, exp_msg, auth_client, config,
     rrset_chnl, changes_chnl = asyncio.Queue(), asyncio.Queue()
 
     with pytest.raises(exceptions.GCPConfigError) as e:
-        reconciler.GoogleDNSReconciler(config, rrset_chnl, changes_chnl)
+        reconciler.GDNSReconciler(config, rrset_chnl, changes_chnl)
 
     e.match(exp_msg)
     assert 1 == len(caplog.records)
@@ -110,7 +110,7 @@ def test_reconciler_default_raises(config_key, exp_msg, auth_client, config,
 @pytest.fixture
 async def recon_client(config, auth_client):
     rch, chch = asyncio.Queue(), asyncio.Queue()
-    recon_client = reconciler.GoogleDNSReconciler(config, rch, chch)
+    recon_client = reconciler.GDNSReconciler(config, rch, chch)
     yield recon_client
     while not chch.empty():
         await chch.get()
