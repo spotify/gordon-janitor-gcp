@@ -16,8 +16,8 @@
 """
 Module to interact with Google APIs via asynchronous HTTP calls.
 :class:`.AIOConnection` is meant to be used/inherited by other
-product-specific clients (e.g. :class:`.GDNSClient`) as it
-handles Google authentication and automatic refresh of tokens.
+product-specific clients (e.g. :class:`.GDNSClient`) as it handles
+Google authentication and automatic refresh of tokens.
 
 .. todo::
 
@@ -69,11 +69,11 @@ class AIOConnection:
     """Async HTTP client to Google APIs with service-account-based auth.
 
     Args:
-        auth_client (.GAuthClient): client to manage authentication
-            for HTTP API requests.
+        auth_client (.GAuthClient): client to manage authentication for
+            HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
-            session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
+            session to use for sending requests. Defaults to the session
+            object attached to :obj:`auth_client` if not provided.
     """
 
     def __init__(self, auth_client=None, session=None):
@@ -169,11 +169,11 @@ class AIOConnection:
         Args:
             url (str): URL to be requested.
             json_callback (func): Custom JSON loader function. Defaults
-                to json.loads
+                to :meth:`json.loads`.
             kwargs (dict): Additional arguments to pass through to the
                 request.
         Returns:
-            response body returned by ``json_callback`` function.
+            response body returned by :func:`json_callback` function.
         """
         if not json_callback:
             json_callback = json.loads

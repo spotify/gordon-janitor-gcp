@@ -17,8 +17,8 @@
 Client classes to retrieve project and instance data from GCE.
 
 These clients use the asynchronous HTTP client defined in
-:class:`.AIOConnection` and require service
-account or JWT-token credentials for authentication.
+:class:`.AIOConnection` and require service account or JWT-token
+credentials for authentication.
 
 To use:
 
@@ -55,19 +55,18 @@ class GCRMClient(http.AIOConnection,
                  http.GPaginatorMixin):
     """Async client to interact with Google Cloud Resource Manager API.
 
-    You can find the endpoint documentation
-    `here <https://cloud.google.com/resource-manager/
-    reference/rest/#rest-resource-v1projects>`__.
+    You can find the endpoint documentation `here <https://cloud.google.
+    com/resource-manager/reference/rest/#rest-resource-v1projects>`__.
 
     Attributes:
         BASE_URL (str): Base endpoint URL.
 
     Args:
-        auth_client (.GAuthClient):
-            client to manage authentication for HTTP API requests.
+        auth_client (.GAuthClient): client to manage authentication for
+            HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
+            session object attached to :obj:`auth_client` if not provided.
         api_version (str): version of API endpoint to send requests to.
     """
     BASE_URL = 'https://cloudresourcemanager.googleapis.com'
@@ -86,13 +85,12 @@ class GCRMClient(http.AIOConnection,
     async def list_all_active_projects(self, page_size=1000):
         """Get all active projects.
 
-        You can find the endpoint documentation
-        `here <https://cloud.google.com/resource-manager/
-        reference/rest/v1/projects/list>`__.
+        You can find the endpoint documentation `here <https://cloud.
+        google.com/resource-manager/reference/rest/v1/projects/list>`__.
 
         Args:
-            page_size (int): hint for the client to only retrieve up to this
-                number of results per API call.
+            page_size (int): hint for the client to only retrieve up to
+                this number of results per API call.
         Returns:
             list(dicts): all active projects
         """

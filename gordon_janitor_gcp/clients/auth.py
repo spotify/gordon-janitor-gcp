@@ -76,9 +76,9 @@ class GAuthClient:
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests.
         loop: (optional) asyncio event loop to use for HTTP requests.
-            NOTE: if ``session`` is given, then ``loop`` will be ignored.
-            Otherwise, ``loop`` will be used to create a session, if
-            provided.
+            NOTE: if :obj:`session` is given, then :obj:`loop` will be
+            ignored. Otherwise, :obj:`loop` will be used to create a
+            session, if provided.
 
     """
 

@@ -15,15 +15,14 @@
 # limitations under the License.
 """
 Client module to publish any required DNS changes initiated from
-:class:`.GoogleDNSReconciler` to `Google Cloud
-Pub/Sub <https://cloud.google.com/pubsub/docs/overview>`_. The consumer
-of these messages is the `Gordon service <https://github.com/spotify/
-gordon>`_.
+:class:`.GDNSReconciler` to `Google Cloud Pub/Sub <https://cloud.
+google.com/pubsub/docs/overview>`_. The consumer of these messages is
+the `Gordon service <https://github.com/spotify/gordon>`_.
 
 This client wraps around `google-cloud-pubsub <https://pypi.python.org
 /pypi/google-cloud-pubsub>`_ using `grpc <https://github.com/googleapis/
 googleapis/blob/master/google/pubsub/v1/pubsub.proto>`_ rather than
-inheriting from :class:`.AIOGoogleHTTPClient`.
+inheriting from :class:`.AIOConnection`.
 
 .. attention::
 
@@ -192,7 +191,7 @@ class GPubsubPublisher:
 
         Args:
             message (dict): change message received from the
-                ``self.changes_channel`` to emit.
+                :obj:`changes_channel` to emit.
         """
         message['timestamp'] = datetime.datetime.utcnow().isoformat()
         bytes_message = bytes(json.dumps(message), encoding='utf-8')

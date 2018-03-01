@@ -20,8 +20,8 @@ record sets from Google Cloud DNS, then publish corrective messages to
 the internal ``changes_channel`` if there are differences.
 
 This client makes use of the asynchronous DNS client as defined in
-:class:`.GDNSClient`, and therefore must use
-service account/JWT authentication (for now).
+:class:`.GDNSClient`, and therefore must use service account/JWT
+authentication (for now).
 
 See :doc:`config` for the required Google DNS configuration.
 
@@ -109,9 +109,9 @@ class GDNSReconciler:
 
     Once validation is done, the Reconciler will emit a ``None`` message
     to the ``changes_channel`` queue, signalling a Publisher client
-    (e.g. :class:`.GooglePubsubPublisher`) to publish the
-    message to a pub/sub to which `Gordon
-    <https://github.com/spotify/gordon>`_ subscribes.
+    (e.g. :class:`.GPubsubPublisher`) to publish the
+    message to a pub/sub to which `Gordon <https://github.com/spotify/
+    gordon>`_ subscribes.
 
     Args:
         config (dict): Google Cloud DNS-related configuration.
@@ -140,9 +140,9 @@ class GDNSReconciler:
         the configured timeout period.
 
         Once all tasks are done, ``None`` is added to the
-        :obj:`changes_channel` to signify that it has no
-        more work to process. Then the HTTP session attached to the
-        :obj:`dns_client` is properly closed.
+        :obj:`changes_channel` to signify that it has no more work to
+        process. Then the HTTP session attached to the :obj:`dns_client`
+        is properly closed.
         """
         all_tasks = asyncio.Task.all_tasks()
         tasks_to_clear = [

@@ -17,8 +17,8 @@
 Client module to interact with the Google Cloud DNS API.
 
 This client makes use of the asynchronus HTTP client as defined in
-:class:`.AIOConnection`, and therefore must use
-service account/JWT authentication (for now).
+:class:`.AIOConnection`, and therefore must use service account/JWT
+authentication (for now).
 
 To use:
 
@@ -62,8 +62,8 @@ class GCPResourceRecordSet:
     Args:
         name (str): Name/label.
         type (str): Record type (see `Google's supported records
-            <https://cloud.google.com/dns/overview#supported_dns_r
-            ecord_types>`_ for valid types).
+            <https://cloud.google.com/dns/overview#supported_dns_record_
+            types>`_ for valid types).
         rrdatas (list): Record data according to RFC 1034§3.6.1 and
             RFC 1035§5.
         ttl (int): (optional) Number of seconds that the record set can
@@ -86,12 +86,12 @@ class GDNSClient(http.AIOConnection):
 
     Args:
         project (str): Google project ID that hosts the managed DNS.
-        auth_client (.GAuthClient):
-            client to manage authentication for HTTP API requests.
+        auth_client (.GAuthClient): client to manage authentication for
+            HTTP API requests.
         api_version (str): DNS API endpoint version. Defaults to ``v1``.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
-            session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
+            session to use for sending requests. Defaults to the session
+            object attached to :obj:`auth_client` if not provided.
     """
     BASE_URL = 'https://www.googleapis.com/dns'
 

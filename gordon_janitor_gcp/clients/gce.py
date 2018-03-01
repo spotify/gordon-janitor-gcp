@@ -17,8 +17,8 @@
 Client classes to retrieve project and instance data from GCE.
 
 These clients use the asynchronous HTTP client defined in
-:class:`.AIOConnection` and require service
-account or JWT-token credentials for authentication.
+:class:`.AIOConnection` and require service account or JWT-token
+credentials for authentication.
 
 To use:
 
@@ -61,16 +61,17 @@ class GCEClient(http.AIOConnection,
         BASE_URL (str): base compute endpoint URL.
 
     Args:
-        auth_client (.GAuthClient):
-            client to manage authentication for HTTP API requests.
+        auth_client (.GAuthClient): client to manage authentication for
+            HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
+            session object attached to :obj:`auth_client` if not
+            provided.
         api_version (str): version of API endpoint to send requests to.
-        blacklisted_tags (list): Do not collect an instance if it has been
-            tagged with any of these.
-        blacklisted_metadata (list): Do not collect an instance if its metadata
-            key:val matches a {key:val} dict in this list.
+        blacklisted_tags (list): Do not collect an instance if it has
+            been tagged with any of these.
+        blacklisted_metadata (list): Do not collect an instance if its
+            metadata key:val matches a {key:val} dict in this list.
     """
     BASE_URL = 'https://www.googleapis.com/compute/'
 
@@ -91,19 +92,20 @@ class GCEClient(http.AIOConnection,
                              instance_filter=None):
         """Fetch all instances in a GCE project.
 
-        You can find the endpoint documentation
-        `here <https://cloud.google.com/compute/docs/reference/latest/
-        instances/aggregatedList>`__.
+        You can find the endpoint documentation `here <https://cloud.
+        google.com/compute/docs/reference/latest/instances/
+        aggregatedList>`__.
 
         Args:
             project (str): unique, user-provided project ID.
-            page_size (int): hint for the client to only retrieve up to this
-                number of results per API call.
-            instance_filter (str): endpoint-specific filter string used to
-                retrieve a subset of instances. This is passed directly to the
-                endpoint's "filter" URL query parameter.
+            page_size (int): hint for the client to only retrieve up to
+                this number of results per API call.
+            instance_filter (str): endpoint-specific filter string used
+                to retrieve a subset of instances. This is passed
+                directly to the endpoint's "filter" URL query parameter.
         Returns:
-            list(dicts): data of all instances in the given ``project``
+            list(dicts): data of all instances in the given
+                :obj:`project`
         """
         url = (f'{self.BASE_URL}{self.api_version}/projects/{project}'
                '/aggregated/instances')
