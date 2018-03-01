@@ -15,6 +15,13 @@
 # limitations under the License.
 """
 Module to interact with Google APIs via asynchronous HTTP calls.
+:class:`.AIOGoogleHTTPClient` is meant to be used/inherited by other
+product-specific clients (e.g. :class:`.AIOGoogleDNSClient`) as it
+handles Google authentication and automatic refresh of tokens.
+
+.. todo::
+
+    Include that it also handles retries once implemented.
 
 To use:
 
@@ -62,8 +69,8 @@ class AIOGoogleHTTPClient:
     """Async HTTP client to Google APIs with service-account-based auth.
 
     Args:
-        auth_client (gordon_janitor_gcp.GoogleAuthClient):
-            client to manage authentication for HTTP API requests.
+        auth_client (.GoogleAuthClient): client to manage authentication
+            for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
             session object attached to ``auth_client`` if not provided.
@@ -100,11 +107,11 @@ class AIOGoogleHTTPClient:
                 object to send in the body of the request.
             headers (dict): (optional) HTTP headers to send with the
                 request. Headers pass through to the request will
-                include :py:attr:`DEFAULT_REQUEST_HEADERS`.
+                include :attr:`DEFAULT_REQUEST_HEADERS`.
         Returns:
             (str) HTTP response body.
         Raises:
-            exceptions.GCPHTTPError: if any exception occurred.
+            :exc:`.GCPHTTPError`: if any exception occurred.
         """
         refresh_attempt = kwargs.pop('cred_refresh_attempt', 0)
 

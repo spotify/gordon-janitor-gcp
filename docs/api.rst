@@ -8,11 +8,11 @@ HTTP Sessions
 
 By default, the HTTP session used for getting credentials is reused for
 API calls (recommended if there are many). If this is not desired, you
-can pass in your own ``aiohttp.ClientSession`` instance into
-``AIOGoogleDNSClient`` or ``AIOGoogleHTTPClient``. The auth client
-``GoogleAuthClient`` may also take an explicit session object, but is
-not required to assert a different HTTP session is used for the API
-calls.
+can pass in your own :class:`aiohttp.ClientSession` instance into
+:class:`AIOGoogleDNSClient` or :class:`AIOGoogleHTTPClient`. The
+auth client :class:`GoogleAuthClient` may also take an explicit
+session object, but is not required to assert a different HTTP session
+is used for the API calls.
 
 .. code-block:: python
 
@@ -37,6 +37,8 @@ calls.
         session=new_session
     )
 
+
+.. NOTE: we separate out `automodule` and `autoclass` (rather than list members with automodule) to make use of the namespace flattening.
 
 
 Asynchronous GCP HTTP Client

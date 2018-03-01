@@ -17,7 +17,7 @@
 Client module to interact with the Google Cloud DNS API.
 
 This client makes use of the asynchronus HTTP client as defined in
-:py:mod:`gordon_janitor_gcp.AIOGoogleHTTPClient`, and therefore must use
+:class:`.AIOGoogleHTTPClient`, and therefore must use
 service account/JWT authentication (for now).
 
 To use:
@@ -86,7 +86,7 @@ class AIOGoogleDNSClient(http.AIOGoogleHTTPClient):
 
     Args:
         project (str): Google project ID that hosts the managed DNS.
-        auth_client (gordon_janitor_gcp.GoogleAuthClient):
+        auth_client (.GoogleAuthClient):
             client to manage authentication for HTTP API requests.
         api_version (str): DNS API endpoint version. Defaults to ``v1``.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
@@ -113,7 +113,7 @@ class AIOGoogleDNSClient(http.AIOGoogleHTTPClient):
         Args:
             zone (str): Desired managed zone to query.
         Returns:
-            list of :py:class:`GCPResourceRecordSet` instances.
+            list of :class:`GCPResourceRecordSet` instances.
         """
         url = f'{self._base_url}/managedZones/{zone}/rrsets'
 

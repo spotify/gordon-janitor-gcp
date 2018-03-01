@@ -17,7 +17,7 @@
 Client classes to retrieve project and instance data from GCE.
 
 These clients use the asynchronous HTTP client defined in
-:py:mod:`gordon_janitor_gcp.AIOGoogleHTTPClient` and require service
+:class:`.AIOGoogleHTTPClient` and require service
 account or JWT-token credentials for authentication.
 
 To use:
@@ -65,7 +65,7 @@ class GCRMClient(http.AIOGoogleHTTPClient,
         BASE_URL (str): Base endpoint URL.
 
     Args:
-        auth_client (gordon_janitor_gcp.GoogleAuthClient):
+        auth_client (.GoogleAuthClient):
             client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
@@ -96,7 +96,7 @@ class GCRMClient(http.AIOGoogleHTTPClient,
             page_size (int): hint for the client to only retrieve up to this
                 number of results per API call.
         Returns:
-            list: list of dicts of all active projects.
+            list(dicts): all active projects
         """
         url = f'{self.BASE_URL}/{self.api_version}/projects'
         params = {'pageSize': page_size}
@@ -117,7 +117,7 @@ class GCEClient(http.AIOGoogleHTTPClient,
         BASE_URL (str): base compute endpoint URL.
 
     Args:
-        auth_client (gordon_janitor_gcp.GoogleAuthClient):
+        auth_client (.GoogleAuthClient):
             client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
@@ -159,7 +159,7 @@ class GCEClient(http.AIOGoogleHTTPClient,
                 retrieve a subset of instances. This is passed directly to the
                 endpoint's "filter" URL query parameter.
         Returns:
-            list: dicts containing instance data.
+            list(dicts): data of all instances in the given ``project``
         """
         url = (f'{self.BASE_URL}{self.api_version}/projects/{project}'
                '/aggregated/instances')

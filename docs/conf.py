@@ -106,6 +106,8 @@ todo_include_todos = True
 # Autodoc extention configuration
 autodoc_member_order = 'bysource'  # not sure why this doesn't work?
 
+# Avoid having to write `:py:` everywhere
+primary_domain = 'py'
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for

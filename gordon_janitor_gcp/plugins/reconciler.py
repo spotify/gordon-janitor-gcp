@@ -20,7 +20,7 @@ record sets from Google Cloud DNS, then publish corrective messages to
 the internal ``changes_channel`` if there are differences.
 
 This client makes use of the asynchronous DNS client as defined in
-:py:mod:`gordon_janitor_gcp.AIOGoogleDNSClient`, and therefore must use
+:class:`.AIOGoogleDNSClient`, and therefore must use
 service account/JWT authentication (for now).
 
 See :doc:`config` for the required Google DNS configuration.
@@ -70,14 +70,14 @@ __all__ = ('GoogleDNSReconciler',)
 class GoogleDNSReconciler:
     """Validate current records in DNS against desired source of truth.
 
-    ``GoogleDNSReconciler`` will create a change message for the
+    :class:`.GoogleDNSReconciler` will create a change message for the
     configured publisher client plugin to consume if there is a
     discrepancy between records in Google Cloud DNS and the desired
     state.
 
     Once validation is done, the Reconciler will emit a ``None`` message
     to the ``changes_channel`` queue, signalling a Publisher client
-    (e.g. ``plugins.GooglePubsubPublisher``) to publish the
+    (e.g. :class:`.GooglePubsubPublisher`) to publish the
     message to a pub/sub to which `Gordon
     <https://github.com/spotify/gordon>`_ subscribes.
 
@@ -135,16 +135,16 @@ class GoogleDNSReconciler:
         return gdns.AIOGoogleDNSClient(**kwargs)
 
     async def done(self):
-        """Clean up and notify ``changes_channel`` of no more messages.
+        """Clean up & notify :obj:`changes_channel` of no more messages.
 
         This method collects all tasks that this particular class
         initiated, and will cancel them if they don't complete within
         the configured timeout period.
 
-        Once all tasks are done, `None` is added to the
-        :py:obj:`self.changes_channel` to signify that it has no
+        Once all tasks are done, ``None`` is added to the
+        :obj:`changes_channel` to signify that it has no
         more work to process. Then the HTTP session attached to the
-        :py:obj:`self.dns_client` is properly closed.
+        :obj:`dns_client` is properly closed.
         """
         all_tasks = asyncio.Task.all_tasks()
         tasks_to_clear = [
@@ -178,7 +178,7 @@ class GoogleDNSReconciler:
         logging.info(msg)
 
     async def publish_change_messages(self, desired_rrsets, action='additions'):
-        """Publish change messages to the ``changes_channel``.
+        """Publish change messages to the :obj:`changes_channel`.
 
         NOTE: Only `'additions'` are currently supported. `'deletions'`
         may be supported in the future.
@@ -253,11 +253,11 @@ class GoogleDNSReconciler:
         await self.publish_change_messages(missing_rrsets, action='additions')
 
     async def start(self):
-        """Start consuming from :py:obj:`self.rrset_channel`.
+        """Start consuming from :obj:`rrset_channel`.
 
         Once ``None`` is received from the channel, finish processing
         records and emit a ``None`` message to the
-        :py:obj:`self.changes_channel`.
+        :obj:`changes_channel`.
         """
         while True:
             desired_rrset = await self.rrset_channel.get()

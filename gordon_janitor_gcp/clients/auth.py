@@ -17,7 +17,7 @@
 Module to create a client interacting with Google Cloud authentication.
 
 An instantiated client is needed for interacting with any of the Google
-APIs via the ``gordon_janitor_gcp.AIOGoogleHTTPClient``.
+APIs via the :class:`.AIOGoogleHTTPClient`.
 
 Only service account (JSON Web Tokens/JWT) authentication is currently
 supported. To setup a service account, follow `Google's docs <https://
@@ -141,9 +141,9 @@ class GoogleAuthClient:
         """Refresh oauth access token attached to this HTTP session.
 
         Raises:
-            exceptions.GCPAuthError: if no token was found in the
+            :exc:`.GCPAuthError`: if no token was found in the
                 response.
-            exceptions.GCPHTTPError: if any exception occurred.
+            :exc:`.GCPHTTPError`: if any exception occurred.
         """
         url, headers, body = self._setup_token_request()
 

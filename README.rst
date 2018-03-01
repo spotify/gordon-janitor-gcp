@@ -16,7 +16,7 @@ Requirements
 ============
 
 * Python 3.6. Support for other Python versions may be added in the future.
-* Service account JSON key that has Cloud DNS read access. See Google's `documentation`_ on how to create a key.
+* Service account JSON key that has relevant access (i.e. read and/or write) to the plugin service you're wanting to use (e.g. Google Cloud DNS, Pub/Sub, or Compute Engine). See Google's `documentation`_ on how to create a key.
 
 
 Development
