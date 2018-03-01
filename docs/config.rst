@@ -1,7 +1,7 @@
 Configuration
 =============
 
-Configuring Google Cloud Platform plugins for the `gordon-janitor`_ service.
+Configuring Google Cloud Platform :doc:`plugins` for the `gordon-janitor`_ service.
 
 Example Configuration
 ---------------------

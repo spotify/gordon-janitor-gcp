@@ -1,5 +1,5 @@
-API Reference
-=============
+API Clients
+===========
 
 .. currentmodule:: gordon_janitor_gcp
 
@@ -74,18 +74,4 @@ GCE Clients
 .. autoclass:: gordon_janitor_gcp.GCRMClient
     :members:
 .. autoclass:: gordon_janitor_gcp.GCEClient
-    :members:
-
-Reconciler
-----------
-
-.. automodule:: gordon_janitor_gcp.plugins.reconciler
-.. autoclass:: gordon_janitor_gcp.GoogleDNSReconciler
-    :members:
-
-Publisher
-----------
-
-.. automodule:: gordon_janitor_gcp.plugins.publisher
-.. autoclass:: gordon_janitor_gcp.GooglePubsubPublisher
     :members:
