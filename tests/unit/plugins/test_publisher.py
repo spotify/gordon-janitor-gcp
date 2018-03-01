@@ -25,14 +25,14 @@ from google.api_core import exceptions as google_exceptions
 from google.cloud import pubsub
 
 from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp import gpubsub_publisher
+from gordon_janitor_gcp.plugins import publisher
 from tests.unit import conftest
 
 
 @pytest.fixture
 def publisher_client(mocker, monkeypatch):
     mock = mocker.Mock(pubsub.PublisherClient, autospec=True)
-    patch = 'gordon_janitor_gcp.gpubsub_publisher.pubsub.PublisherClient'
+    patch = 'gordon_janitor_gcp.plugins.publisher.pubsub.PublisherClient'
     monkeypatch.setattr(patch, mock)
     return mock
 
@@ -69,7 +69,7 @@ async def test_done(exp_log_records, timeout, side_effect, kwargs,
         mock_msg2.done.side_effect = side_effect
 
     kwargs['config']['cleanup_timeout'] = timeout
-    client = gpubsub_publisher.GooglePubsubPublisher(**kwargs)
+    client = publisher.GooglePubsubPublisher(**kwargs)
     client._messages.add(mock_msg1)
     client._messages.add(mock_msg2)
 
@@ -94,7 +94,7 @@ async def test_publish(kwargs, publisher_client, auth_client, mocker,
     exp_topic = f'projects/{project}/topics/{topic}'
     kwargs['config']['topic'] = exp_topic
 
-    client = gpubsub_publisher.GooglePubsubPublisher(**kwargs)
+    client = publisher.GooglePubsubPublisher(**kwargs)
 
     msg1 = {'message': 'one'}
 
@@ -124,7 +124,7 @@ async def test_start(raises, exp_log_records, kwargs, publisher_client,
     await kwargs['changes_channel'].put(msg1)
     await kwargs['changes_channel'].put(None)
 
-    client = gpubsub_publisher.GooglePubsubPublisher(**kwargs)
+    client = publisher.GooglePubsubPublisher(**kwargs)
     await client.start()
 
     publisher_client.publish.assert_called_once()
@@ -152,7 +152,7 @@ def test_get_publisher(local, timeout, exp_timeout, topic, config,
         config['cleanup_timeout'] = timeout
 
     config['topic'] = topic
-    client = gpubsub_publisher.get_publisher(config, changes_chnl)
+    client = publisher.get_publisher(config, changes_chnl)
 
     topic = topic.split('/')[-1]
     exp_topic = f'projects/{config["project"]}/topics/{topic}'
@@ -176,7 +176,7 @@ def test_get_publisher_config_raises(config_key, exp_msg, config, auth_client,
     config.pop(config_key)
 
     with pytest.raises(exceptions.GCPConfigError) as e:
-        client = gpubsub_publisher.get_publisher(config, changes_chnl)
+        client = publisher.get_publisher(config, changes_chnl)
         client.publisher.create_topic.assert_not_called()
 
     e.match(exp_msg)
@@ -190,7 +190,7 @@ def test_get_publisher_raises(config, auth_client, publisher_client, caplog,
     publisher_client.return_value.create_topic.side_effect = [Exception('fooo')]
 
     with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        client = gpubsub_publisher.get_publisher(config, changes_chnl)
+        client = publisher.get_publisher(config, changes_chnl)
 
         client.publisher.create_topic.assert_called_once_with(client.topic)
         e.match(f'Error trying to create topic "{client.topic}"')
@@ -206,7 +206,7 @@ def test_get_publisher_topic_exists(config, auth_client, publisher_client,
     publisher_client.return_value.create_topic.side_effect = [exp]
 
     short_topic = config['topic']
-    client = gpubsub_publisher.get_publisher(config, changes_chnl)
+    client = publisher.get_publisher(config, changes_chnl)
 
     exp_topic = f'projects/{config["project"]}/topics/{short_topic}'
     assert 60 == client.cleanup_timeout

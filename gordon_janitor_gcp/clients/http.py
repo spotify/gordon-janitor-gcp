@@ -20,7 +20,7 @@ To use:
 
 .. code-block:: python
 
-    from gordon_janitor_gcp import auth
+    from gordon_janitor_gcp.clients import auth
 
     keyfile = '/path/to/service_account_keyfile.json'
     auth_client = auth.GoogleAuthClient(keyfile=keyfile)
@@ -59,8 +59,8 @@ class AIOGoogleHTTPClient:
     """Async HTTP client to Google APIs with service-account-based auth.
 
     Args:
-        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
-            to manage authentication for HTTP API requests.
+        auth_client (gordon_janitor_gcp.clients.auth.GoogleAuthClient):
+            client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
             session object attached to ``auth_client`` if not provided.

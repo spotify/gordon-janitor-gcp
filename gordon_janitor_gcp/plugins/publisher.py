@@ -15,14 +15,14 @@
 # limitations under the License.
 """
 Client module to publish any required DNS changes initiated from
-:py:class:`gordon_janitor_gcp.gdns_reconciler.GoogleDNSReconciler` to
+:py:class:`gordon_janitor_gcp.plugins.reconciler.GoogleDNSReconciler` to
 Google Cloud Pub/Sub. The consumer of these messages is the `Gordon
 service <https://github.com/spotify/gordon>`_.
 
 This client wraps around `google-cloud-pubsub <https://pypi.python.org
 /pypi/google-cloud-pubsub>`_ using `grpc <https://github.com/googleapis/
 googleapis/blob/master/google/pubsub/v1/pubsub.proto>`_ rather than
-inheriting from :py:class:`gordon_janitor_gcp.http_client.\
+inheriting from :py:class:`gordon_janitor_gcp.clients.http.\
 AIOGoogleHTTPClient`.
 
 .. attention::
@@ -65,8 +65,8 @@ from google.api_core import exceptions as google_exceptions
 from google.cloud import pubsub
 from gordon_janitor import interfaces
 
-from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
+from gordon_janitor_gcp.clients import auth
 
 
 def _init_pubsub_client(auth_client, config):

@@ -17,7 +17,7 @@
 Client module to interact with the Google Cloud DNS API.
 
 This client makes use of the asynchronus HTTP client as defined in
-:py:mod:`gordon_janitor_gcp.http_client`, and therefore must use
+:py:mod:`gordon_janitor_gcp.clients.http`, and therefore must use
 service account/JWT authentication (for now).
 
 To use:
@@ -26,7 +26,7 @@ To use:
 
     import asyncio
 
-    from gordon_janitor_gcp import auth
+    from gordon_janitor_gcp.clients import auth
 
     keyfile = '/path/to/service_account_keyfile.json'
     auth_client = auth.GoogleAuthClient(keyfile=keyfile)
@@ -50,7 +50,7 @@ import logging
 
 import attr
 
-from gordon_janitor_gcp import http_client
+from gordon_janitor_gcp.clients import http
 
 
 @attr.s
@@ -76,7 +76,7 @@ class GCPResourceRecordSet:
     ttl = attr.ib(type=int, default=300)
 
 
-class AIOGoogleDNSClient(http_client.AIOGoogleHTTPClient):
+class AIOGoogleDNSClient(http.AIOGoogleHTTPClient):
     """Async HTTP client to interact with Google Cloud DNS API.
 
     Attributes:
@@ -84,8 +84,8 @@ class AIOGoogleDNSClient(http_client.AIOGoogleHTTPClient):
 
     Args:
         project (str): Google project ID that hosts the managed DNS.
-        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
-            to manage authentication for HTTP API requests.
+        auth_client (gordon_janitor_gcp.clients.auth.GoogleAuthClient):
+            client to manage authentication for HTTP API requests.
         api_version (str): DNS API endpoint version. Defaults to ``v1``.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the

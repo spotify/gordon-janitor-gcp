@@ -17,7 +17,7 @@
 Client classes to retrieve project and instance data from GCE.
 
 These clients use the asynchronous HTTP client defined in
-:py:mod:`gordon_janitor_gcp.http_client` and require service account or
+:py:mod:`gordon_janitor_gcp.clients.http` and require service account or
 JWT-token credentials for authentication.
 
 To use:
@@ -28,7 +28,7 @@ To use:
 
     import aiohttp
 
-    from gordon_janitor_gcp import auth
+    from gordon_janitor_gcp.clients import auth
 
     loop = asyncio.get_event_loop()
 
@@ -48,11 +48,11 @@ To use:
 
 import logging
 
-from gordon_janitor_gcp import http_client
+from gordon_janitor_gcp.clients import http
 
 
-class GCRMClient(http_client.AIOGoogleHTTPClient,
-                 http_client.GPaginatorMixin):
+class GCRMClient(http.AIOGoogleHTTPClient,
+                 http.GPaginatorMixin):
     """Async client to interact with Google Cloud Resource Manager API.
 
     You can find the endpoint documentation
@@ -63,8 +63,8 @@ class GCRMClient(http_client.AIOGoogleHTTPClient,
         BASE_URL (str): Base endpoint URL.
 
     Args:
-        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
-            to manage authentication for HTTP API requests.
+        auth_client (gordon_janitor_gcp.clients.auth.GoogleAuthClient):
+            client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
             session object attached to ``auth_client`` if not provided.
@@ -107,16 +107,16 @@ class GCRMClient(http_client.AIOGoogleHTTPClient,
         ]
 
 
-class GCEClient(http_client.AIOGoogleHTTPClient,
-                http_client.GPaginatorMixin):
+class GCEClient(http.AIOGoogleHTTPClient,
+                http.GPaginatorMixin):
     """Async client to interact with Google Cloud Compute API.
 
     Attributes:
         BASE_URL (str): base compute endpoint URL.
 
     Args:
-        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
-            to manage authentication for HTTP API requests.
+        auth_client (gordon_janitor_gcp.clients.auth.GoogleAuthClient):
+            client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
             session object attached to ``auth_client`` if not provided.

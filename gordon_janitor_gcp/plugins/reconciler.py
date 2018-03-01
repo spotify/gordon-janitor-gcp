@@ -20,7 +20,7 @@ record sets from Google Cloud DNS, then publish corrective messages to
 the internal ``changes_channel`` if there are differences.
 
 This client makes use of the asynchronous DNS client as defined in
-:py:mod:`gordon_janitor_gcp.gdns_client`, and therefore must use
+:py:mod:`gordon_janitor_gcp.clients.gdns`, and therefore must use
 service account/JWT authentication (for now).
 
 See :doc:`config` for the required Google DNS configuration.
@@ -58,9 +58,9 @@ import logging
 
 import attr
 
-from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp import gdns_client
+from gordon_janitor_gcp.clients import auth
+from gordon_janitor_gcp.clients import gdns
 
 
 class GoogleDNSReconciler:
@@ -73,7 +73,7 @@ class GoogleDNSReconciler:
 
     Once validation is done, the Reconciler will emit a ``None`` message
     to the ``changes_channel`` queue, signalling a Publisher client
-    (e.g. ``gpubsub_client.AIOGooglePubsubClient``) to publish the
+    (e.g. ``plugins.GooglePubsubPublisher``) to publish the
     message to a pub/sub to which `Gordon
     <https://github.com/spotify/gordon>`_ subscribes.
 
@@ -128,7 +128,7 @@ class GoogleDNSReconciler:
             'api_version': self.config.get('api_version'),
             'auth_client': auth_client
         }
-        return gdns_client.AIOGoogleDNSClient(**kwargs)
+        return gdns.AIOGoogleDNSClient(**kwargs)
 
     async def done(self):
         """Clean up and notify ``changes_channel`` of no more messages.
@@ -228,7 +228,7 @@ class GoogleDNSReconciler:
                 Cloud DNS API's response.
         """
         desired_rrsets = [
-            gdns_client.GCPResourceRecordSet(**record) for record in rrsets
+            gdns.GCPResourceRecordSet(**record) for record in rrsets
         ]
 
         actual_rrsets = await self.dns_client.get_records_for_zone(zone)

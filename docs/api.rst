@@ -44,34 +44,35 @@ calls.
 Asynchronous GCP HTTP Client
 ----------------------------
 
-.. automodule:: gordon_janitor_gcp.http_client
-
-
-GCP Cloud DNS HTTP Client
--------------------------
-
-.. automodule:: gordon_janitor_gcp.gdns_client
+.. automodule:: gordon_janitor_gcp.clients.http
 
 
 GCP Auth Client
 ---------------
 
-.. automodule:: gordon_janitor_gcp.auth
+.. automodule:: gordon_janitor_gcp.clients.auth
 
 
-Reconciler
-----------
+GCP Cloud DNS HTTP Client
+-------------------------
 
-.. automodule:: gordon_janitor_gcp.gdns_reconciler
-
-
-Publisher
-----------
-
-.. automodule:: gordon_janitor_gcp.gpubsub_publisher
+.. automodule:: gordon_janitor_gcp.clients.gdns
 
 
 GCE Clients
 -----------
 
-.. automodule:: gordon_janitor_gcp.gcp_clients
+.. automodule:: gordon_janitor_gcp.clients.gcp
+
+Reconciler
+----------
+
+.. automodule:: gordon_janitor_gcp.plugins.reconciler
+
+
+Publisher
+----------
+
+.. automodule:: gordon_janitor_gcp.plugins.publisher
+
+

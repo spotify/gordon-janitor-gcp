@@ -24,8 +24,8 @@ from aioresponses import aioresponses
 from google.oauth2 import _client as oauth_client
 from google.oauth2 import service_account
 
-from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
+from gordon_janitor_gcp.clients import auth
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
@@ -44,7 +44,7 @@ def mock_service_acct(mocker, monkeypatch):
     sa_creds._make_authorization_grant_assertion.return_value = 'deadb33f=='
     mock_creds.from_service_account_info.return_value = sa_creds
 
-    patch = 'gordon_janitor_gcp.auth.service_account.Credentials'
+    patch = 'gordon_janitor_gcp.clients.auth.service_account.Credentials'
     monkeypatch.setattr(patch, mock_creds)
     return mock_creds
 
@@ -135,7 +135,7 @@ def test_auth_client_raises_not_found(tmpdir, caplog):
 def mock_parse_expiry(mocker, monkeypatch):
     mock = mocker.MagicMock(oauth_client, autospec=True)
     mock._parse_expiry.return_value = datetime.datetime(2018, 1, 1, 12, 0, 0)
-    monkeypatch.setattr('gordon_janitor_gcp.auth._client', mock)
+    monkeypatch.setattr('gordon_janitor_gcp.clients.auth._client', mock)
     return mock
 
 

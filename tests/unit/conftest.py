@@ -24,7 +24,7 @@ import logging
 import aiohttp
 import pytest
 
-from gordon_janitor_gcp import auth
+from gordon_janitor_gcp.clients import auth
 
 API_BASE_URL = 'https://example.com'
 API_URL = f'{API_BASE_URL}/v1/foo_endpoint'
@@ -116,7 +116,7 @@ def auth_client(mocker, monkeypatch):
     creds = mocker.Mock()
     mock.creds = creds
     monkeypatch.setattr(
-        'gordon_janitor_gcp.gpubsub_publisher.auth.GoogleAuthClient', mock)
+        'gordon_janitor_gcp.plugins.publisher.auth.GoogleAuthClient', mock)
     yield mock
     mock._session.close()
 

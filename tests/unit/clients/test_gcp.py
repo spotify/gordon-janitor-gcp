@@ -20,14 +20,14 @@ import logging
 import pytest
 from aioresponses import aioresponses
 
-from gordon_janitor_gcp import gcp_clients
+from gordon_janitor_gcp.clients import gcp
 
 
 class TestGCRMClient:
     @pytest.fixture
     def patch_crm_url(self, monkeypatch):
         fake_url = 'https://example.com'
-        class_attribute = 'gordon_janitor_gcp.gcp_clients.GCRMClient.BASE_URL'
+        class_attribute = 'gordon_janitor_gcp.clients.gcp.GCRMClient.BASE_URL'
         monkeypatch.setattr(class_attribute, fake_url)
         return fake_url
 
@@ -59,7 +59,7 @@ class TestGCRMClient:
     async def test_list_all_active_projects(
             self, mocker, crm_one_page_rsp, patch_crm_url, get_gce_client):
         """Request is made using default parameters."""
-        crm_client = get_gce_client(gcp_clients.GCRMClient)
+        crm_client = get_gce_client(gcp.GCRMClient)
 
         api_url = f'{patch_crm_url}/v1/projects?'
         with aioresponses() as m:
@@ -74,7 +74,7 @@ class TestGCRMClient:
     async def test_list_all_active_projects_multiple_pages(
             self, mocker, crm_one_page_rsp, patch_crm_url, get_gce_client):
         """Client successfully retrieves multiple pages of results from API."""
-        crm_client = get_gce_client(gcp_clients.GCRMClient)
+        crm_client = get_gce_client(gcp.GCRMClient)
         page2 = copy.deepcopy(crm_one_page_rsp)
         page2['projects'][0]['projectNumber'] = '3'
         page2['projects'][1]['projectNumber'] = '4'
@@ -105,7 +105,7 @@ class TestGCPClient:
     @pytest.fixture
     def patch_compute_base_url(self, monkeypatch):
         fake_url = 'http://example.com/compute/'
-        class_attribute = 'gordon_janitor_gcp.gcp_clients.GCEClient.BASE_URL'
+        class_attribute = 'gordon_janitor_gcp.clients.gcp.GCEClient.BASE_URL'
         monkeypatch.setattr(class_attribute, fake_url)
         return fake_url
 
@@ -170,7 +170,7 @@ class TestGCPClient:
             query_str, instance_meta, log_call_count):
         """Client uses multiple filters to process results."""
         caplog.set_level(logging.DEBUG)
-        gce_client = get_gce_client(gcp_clients.GCEClient)
+        gce_client = get_gce_client(gcp.GCEClient)
 
         if instance_meta:
             instance_dict = compute_rsp['items']['us-west1-z']['instances'][0]
@@ -215,7 +215,7 @@ class TestGCPClient:
     async def test_list_instances_bad_json(
             self, compute_rsp, patch_compute_base_url, get_gce_client, caplog):
         """Client ignores incomplete API replies."""
-        gce_client = get_gce_client(gcp_clients.GCEClient)
+        gce_client = get_gce_client(gcp.GCEClient)
         caplog.set_level(logging.DEBUG)
         del compute_rsp['items']['us-west1-z']['instances'][0]['name']
         with aioresponses() as m:
@@ -233,7 +233,7 @@ class TestGCPClient:
     async def test_list_instances_retrieves_multiple_pages(
             self, compute_rsp, patch_compute_base_url, get_gce_client, caplog):
         """Client successfully retrieves multiple pages of results from API."""
-        gce_client = get_gce_client(gcp_clients.GCEClient)
+        gce_client = get_gce_client(gcp.GCEClient)
         page2 = copy.deepcopy(compute_rsp)
         page2['items']['us-west1-z']['instances'][0]['name'] = 'instance-2'
         compute_rsp['nextPageToken'] = '123token123'
