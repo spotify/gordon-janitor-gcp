@@ -15,11 +15,35 @@
 # limitations under the License.
 
 # Mainly for easier documentation reading
-from gordon_janitor_gcp.plugins.publisher import *  # noqa: F403
+from gordon_janitor_gcp.plugins import publisher
+from gordon_janitor_gcp.plugins.publisher import GPubsubPublisher  # noqa: F401
 from gordon_janitor_gcp.plugins.reconciler import *  # noqa: F403
 
 
 __all__ = (
-    publisher.__all__ +  # noqa: F405
-    reconciler.__all__  # noqa: F405
+    reconciler.__all__ +  # noqa: F405
+    ('get_publisher', 'GPubsubPublisher')
 )
+
+
+def get_publisher(config, changes_channel, **kw):
+    """Get a GPubsubPublisher client.
+
+    A factory function that validates configuration, creates an auth
+    and pubsub API client, and returns a Google Pub/Sub Publisher
+    provider.
+
+    Args:
+        config (dict): Google Cloud Pub/Sub-related configuration.
+        changes_channel (asyncio.Queue): queue to publish message to
+            make corrections to Cloud DNS.
+        kw (dict): Additional keyword arguments to pass to the
+            Publisher.
+    Returns:
+        A :class:`GPubsubPublisher` instance.
+    """
+    publisher._validate_pubsub_config(config)
+    auth_client = publisher._init_pubsub_auth(config)
+    pubsub_client = publisher._init_pubsub_client(auth_client, config)
+    return publisher.GPubsubPublisher(
+        config, pubsub_client, changes_channel, **kw)

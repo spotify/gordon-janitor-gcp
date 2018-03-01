@@ -23,6 +23,7 @@ import logging
 
 import aiohttp
 import pytest
+from google.cloud import pubsub
 
 from gordon_janitor_gcp.clients import auth
 
@@ -145,3 +146,11 @@ def get_gce_client(mocker, auth_client):
         mocker.patch.object(client, 'set_valid_token', _noop)
         return client
     return _create_client
+
+
+@pytest.fixture
+def publisher_client(mocker, monkeypatch):
+    mock = mocker.Mock(pubsub.PublisherClient, autospec=True)
+    patch = 'gordon_janitor_gcp.plugins.publisher.pubsub.PublisherClient'
+    monkeypatch.setattr(patch, mock)
+    return mock

@@ -71,7 +71,7 @@ from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp.clients import auth
 
 
-__all__ = ('get_publisher', 'GPubsubPublisher',)
+__all__ = ('GPubsubPublisher',)
 
 
 def _init_pubsub_client(auth_client, config):
@@ -112,8 +112,8 @@ def _init_pubsub_auth(config):
 
 def _validate_pubsub_config(config):
     # req keys: keyfile, project, topic
-        # TODO (lynn): keyfile won't be required once we support other
-        #              auth methods
+    # TODO (lynn): keyfile won't be required once we support other
+    #              auth methods
     if not config.get('keyfile'):
         msg = ('The path to a Service Account JSON keyfile is required to '
                'authenticate for Google Cloud Pub/Sub.')
@@ -132,28 +132,6 @@ def _validate_pubsub_config(config):
     topic_prefix = f'projects/{config["project"]}/topics/'
     if not config.get('topic').startswith(topic_prefix):
         config['topic'] = f'{topic_prefix}{config["topic"]}'
-
-
-def get_publisher(config, changes_channel, **kw):
-    """Get a GPubsubPublisher client.
-
-    A factory function that validates configuration, creates an auth
-    and pubsub API client, and returns a Google Pub/Sub Publisher
-    provider.
-
-    Args:
-        config (dict): Google Cloud Pub/Sub-related configuration.
-        changes_channel (asyncio.Queue): queue to publish message to
-            make corrections to Cloud DNS.
-        kw (dict): Additional keyword arguments to pass to the
-            Publisher.
-    Returns:
-        A :class:`GPubsubPublisher` instance.
-    """
-    _validate_pubsub_config(config)
-    auth_client = _init_pubsub_auth(config)
-    pubsub_client = _init_pubsub_client(auth_client, config)
-    return GPubsubPublisher(config, pubsub_client, changes_channel, **kw)
 
 
 @zope.interface.implementer(interfaces.IPublisher)

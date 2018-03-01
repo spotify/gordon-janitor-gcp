@@ -21,20 +21,9 @@ import json
 import logging
 
 import pytest
-from google.api_core import exceptions as google_exceptions
-from google.cloud import pubsub
 
-from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp.plugins import publisher
 from tests.unit import conftest
-
-
-@pytest.fixture
-def publisher_client(mocker, monkeypatch):
-    mock = mocker.Mock(pubsub.PublisherClient, autospec=True)
-    patch = 'gordon_janitor_gcp.plugins.publisher.pubsub.PublisherClient'
-    monkeypatch.setattr(patch, mock)
-    return mock
 
 
 @pytest.fixture
@@ -129,89 +118,3 @@ async def test_start(raises, exp_log_records, kwargs, publisher_client,
 
     publisher_client.publish.assert_called_once()
     assert exp_log_records == len(caplog.records)
-
-
-@pytest.fixture
-def emulator(monkeypatch):
-    monkeypatch.delenv('PUBSUB_EMULATOR_HOST', raising=False)
-
-
-@pytest.mark.parametrize('local,timeout,exp_timeout,topic', [
-    (True, None, 60, 'a-topic'),
-    (False, 30, 30, 'projects/test-example/topics/a-topic'),
-])
-def test_get_publisher(local, timeout, exp_timeout, topic, config,
-                       auth_client, publisher_client, emulator, monkeypatch):
-    """Happy path to initialize a Publisher client."""
-    changes_chnl = asyncio.Queue()
-
-    if local:
-        monkeypatch.setenv('PUBSUB_EMULATOR_HOST', True)
-
-    if timeout:
-        config['cleanup_timeout'] = timeout
-
-    config['topic'] = topic
-    client = publisher.get_publisher(config, changes_chnl)
-
-    topic = topic.split('/')[-1]
-    exp_topic = f'projects/{config["project"]}/topics/{topic}'
-    assert exp_timeout == client.cleanup_timeout
-    assert client.publisher is not None
-    assert not client._messages
-
-    client.publisher.create_topic.assert_called_once_with(exp_topic)
-
-
-@pytest.mark.parametrize('config_key,exp_msg',  [
-    ('keyfile', 'The path to a Service Account JSON keyfile is required '),
-    ('project', 'The GCP project where Cloud Pub/Sub is located is required.'),
-    ('topic', ('A topic for the client to publish to in Cloud Pub/Sub is '
-               'required.')),
-])
-def test_get_publisher_config_raises(config_key, exp_msg, config, auth_client,
-                                     publisher_client, caplog, emulator):
-    """Raise with improper configuration."""
-    changes_chnl = asyncio.Queue()
-    config.pop(config_key)
-
-    with pytest.raises(exceptions.GCPConfigError) as e:
-        client = publisher.get_publisher(config, changes_chnl)
-        client.publisher.create_topic.assert_not_called()
-
-    e.match(exp_msg)
-    assert 1 == len(caplog.records)
-
-
-def test_get_publisher_raises(config, auth_client, publisher_client, caplog,
-                              emulator):
-    """Raise when there's an issue creating a Google Pub/Sub topic."""
-    changes_chnl = asyncio.Queue()
-    publisher_client.return_value.create_topic.side_effect = [Exception('fooo')]
-
-    with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        client = publisher.get_publisher(config, changes_chnl)
-
-        client.publisher.create_topic.assert_called_once_with(client.topic)
-        e.match(f'Error trying to create topic "{client.topic}"')
-
-    assert 1 == len(caplog.records)
-
-
-def test_get_publisher_topic_exists(config, auth_client, publisher_client,
-                                    emulator):
-    """Do not raise if topic already exists."""
-    changes_chnl = asyncio.Queue()
-    exp = google_exceptions.AlreadyExists('foo')
-    publisher_client.return_value.create_topic.side_effect = [exp]
-
-    short_topic = config['topic']
-    client = publisher.get_publisher(config, changes_chnl)
-
-    exp_topic = f'projects/{config["project"]}/topics/{short_topic}'
-    assert 60 == client.cleanup_timeout
-    assert client.publisher is not None
-    assert not client._messages
-    assert exp_topic == client.topic
-
-    client.publisher.create_topic.assert_called_once_with(exp_topic)
