@@ -174,4 +174,5 @@ man_pages = [
 intersphinx_mapping = {
     'https://docs.python.org/3': None,
     'https://googlecloudplatform.github.io/google-cloud-python/latest/': None,
+    'https://aiohttp.readthedocs.io/en/stable/': None,
 }
