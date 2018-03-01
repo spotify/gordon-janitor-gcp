@@ -17,8 +17,8 @@
 Client classes to retrieve project and instance data from GCE.
 
 These clients use the asynchronous HTTP client defined in
-:py:mod:`gordon_janitor_gcp.clients.http` and require service account or
-JWT-token credentials for authentication.
+:py:mod:`gordon_janitor_gcp.AIOGoogleHTTPClient` and require service
+account or JWT-token credentials for authentication.
 
 To use:
 
@@ -27,16 +27,15 @@ To use:
     import asyncio
 
     import aiohttp
-
-    from gordon_janitor_gcp.clients import auth
+    import gordon_janitor_gcp
 
     loop = asyncio.get_event_loop()
 
     async def main():
         session = aiohttp.ClientSession()
-        auth_client = auth.GoogleAuthClient(
+        auth_client = gordon_janitor_gcp.GoogleAuthClient(
             keyfile='/path/to/keyfile', session=session)
-        client = GCEClient(auth_client, session)
+        client = gordon_janitor_gcp.GCEClient(auth_client, session)
         instances = await client.list_instances('project-id')
         print(instances)
 
@@ -51,6 +50,9 @@ import logging
 from gordon_janitor_gcp.clients import http
 
 
+__all__ = ('GCRMClient', 'GCEClient',)
+
+
 class GCRMClient(http.AIOGoogleHTTPClient,
                  http.GPaginatorMixin):
     """Async client to interact with Google Cloud Resource Manager API.
@@ -63,7 +65,7 @@ class GCRMClient(http.AIOGoogleHTTPClient,
         BASE_URL (str): Base endpoint URL.
 
     Args:
-        auth_client (gordon_janitor_gcp.clients.auth.GoogleAuthClient):
+        auth_client (gordon_janitor_gcp.GoogleAuthClient):
             client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
@@ -115,7 +117,7 @@ class GCEClient(http.AIOGoogleHTTPClient,
         BASE_URL (str): base compute endpoint URL.
 
     Args:
-        auth_client (gordon_janitor_gcp.clients.auth.GoogleAuthClient):
+        auth_client (gordon_janitor_gcp.GoogleAuthClient):
             client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the

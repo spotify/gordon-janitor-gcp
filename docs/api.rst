@@ -1,6 +1,7 @@
 API Reference
 =============
 
+.. currentmodule:: gordon_janitor_gcp
 
 HTTP Sessions
 -------------
@@ -16,25 +17,22 @@ calls.
 .. code-block:: python
 
     import aiohttp
-
-    from gordon_janitor_gcp import auth
-    from gordon_janitor_gcp import gdns_client
-    from gordon_janitor_gcp import http_client
+    import gordon_janitor_gcp
 
     keyfile = '/path/to/service_account_keyfile.json'
     session = aiohttp.ClientSession()  # optional
-    auth_client = auth.GoogleAuthClient(
+    auth_client = gordon_janitor_gcp.GoogleAuthClient(
         keyfile=keyfile, session=session
     )
 
     new_session = aiohttp.ClientSession()
 
     # basic HTTP client
-    client = http_client.AIOGoogleHTTPClient(
+    client = gordon_janitor_gcp.AIOGoogleHTTPClient(
         auth_client=auth_client, session=new_session
     )
     # or DNS client
-    client = gdns_client.AIOGoogleDNSClient(
+    client = gordon_janitor_gcp.AIOGoogleDNSClient(
         project='my-dns-project', auth_client=auth_client,
         session=new_session
     )
@@ -45,34 +43,47 @@ Asynchronous GCP HTTP Client
 ----------------------------
 
 .. automodule:: gordon_janitor_gcp.clients.http
+.. autoclass:: gordon_janitor_gcp.AIOGoogleHTTPClient
+    :members:
 
 
 GCP Auth Client
 ---------------
 
 .. automodule:: gordon_janitor_gcp.clients.auth
+.. autoclass:: gordon_janitor_gcp.GoogleAuthClient
+    :members:
 
 
 GCP Cloud DNS HTTP Client
 -------------------------
 
 .. automodule:: gordon_janitor_gcp.clients.gdns
+.. autoclass:: gordon_janitor_gcp.AIOGoogleDNSClient
+    :members:
+.. autoclass:: gordon_janitor_gcp.GCPResourceRecordSet
+    :members:
 
 
 GCE Clients
 -----------
 
 .. automodule:: gordon_janitor_gcp.clients.gcp
+.. autoclass:: gordon_janitor_gcp.GCRMClient
+    :members:
+.. autoclass:: gordon_janitor_gcp.GCEClient
+    :members:
 
 Reconciler
 ----------
 
 .. automodule:: gordon_janitor_gcp.plugins.reconciler
-
+.. autoclass:: gordon_janitor_gcp.GoogleDNSReconciler
+    :members:
 
 Publisher
 ----------
 
 .. automodule:: gordon_janitor_gcp.plugins.publisher
-
-
+.. autoclass:: gordon_janitor_gcp.GooglePubsubPublisher
+    :members:

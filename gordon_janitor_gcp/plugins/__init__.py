@@ -13,3 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Mainly for easier documentation reading
+from gordon_janitor_gcp.plugins.publisher import *  # noqa: F403
+from gordon_janitor_gcp.plugins.reconciler import *  # noqa: F403
+
+
+__all__ = (
+    publisher.__all__ +  # noqa: F405
+    reconciler.__all__  # noqa: F405
+)

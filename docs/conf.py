@@ -105,7 +105,6 @@ todo_include_todos = True
 
 # Autodoc extention configuration
 autodoc_member_order = 'bysource'  # not sure why this doesn't work?
-autodoc_default_flags = ['members']
 
 # -- Options for HTML output ----------------------------------------------
 

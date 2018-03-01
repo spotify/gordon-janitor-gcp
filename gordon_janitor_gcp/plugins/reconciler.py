@@ -20,7 +20,7 @@ record sets from Google Cloud DNS, then publish corrective messages to
 the internal ``changes_channel`` if there are differences.
 
 This client makes use of the asynchronous DNS client as defined in
-:py:mod:`gordon_janitor_gcp.clients.gdns`, and therefore must use
+:py:mod:`gordon_janitor_gcp.AIOGoogleDNSClient`, and therefore must use
 service account/JWT authentication (for now).
 
 See :doc:`config` for the required Google DNS configuration.
@@ -35,6 +35,7 @@ To use:
 .. code-block:: python
 
     import asyncio
+    import gordon_janitor_gcp
 
     config = {
         'keyfile': '/path/to/keyfile.json',
@@ -43,7 +44,7 @@ To use:
     rrset_chnl = asyncio.Queue()
     changes_chnl = asyncio.Queue()
 
-    reconciler = GoogleDNSReconciler(
+    reconciler = gordon_janitor_gcp.GoogleDNSReconciler(
         config, rrset_chnl, changes_chnl)
 
     loop = asyncio.get_event_loop()
@@ -61,6 +62,9 @@ import attr
 from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp.clients import auth
 from gordon_janitor_gcp.clients import gdns
+
+
+__all__ = ('GoogleDNSReconciler',)
 
 
 class GoogleDNSReconciler:

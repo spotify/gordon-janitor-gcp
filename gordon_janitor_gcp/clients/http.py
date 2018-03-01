@@ -20,10 +20,11 @@ To use:
 
 .. code-block:: python
 
-    from gordon_janitor_gcp.clients import auth
+    import gordon_janitor_gcp
 
     keyfile = '/path/to/service_account_keyfile.json'
-    auth_client = auth.GoogleAuthClient(keyfile=keyfile)
+    auth_client = gordon_janitor_gcp.GoogleAuthClient(
+        keyfile=keyfile)
 
     client = AIOGoogleHTTPClient(auth_client=auth_client)
     resp = await client.request('get', 'http://api.example.com/foo')
@@ -38,6 +39,8 @@ import logging
 import aiohttp
 
 from gordon_janitor_gcp import exceptions
+
+__all__ = ('AIOGoogleHTTPClient',)
 
 
 DEFAULT_REQUEST_HEADERS = {
@@ -59,7 +62,7 @@ class AIOGoogleHTTPClient:
     """Async HTTP client to Google APIs with service-account-based auth.
 
     Args:
-        auth_client (gordon_janitor_gcp.clients.auth.GoogleAuthClient):
+        auth_client (gordon_janitor_gcp.GoogleAuthClient):
             client to manage authentication for HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the

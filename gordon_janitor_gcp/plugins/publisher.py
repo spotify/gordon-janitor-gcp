@@ -15,15 +15,14 @@
 # limitations under the License.
 """
 Client module to publish any required DNS changes initiated from
-:py:class:`gordon_janitor_gcp.plugins.reconciler.GoogleDNSReconciler` to
-Google Cloud Pub/Sub. The consumer of these messages is the `Gordon
-service <https://github.com/spotify/gordon>`_.
+:py:class:`gordon_janitor_gcp.GoogleDNSReconciler` to Google Cloud
+Pub/Sub. The consumer of these messages is the `Gordon service <https://
+github.com/spotify/gordon>`_.
 
 This client wraps around `google-cloud-pubsub <https://pypi.python.org
 /pypi/google-cloud-pubsub>`_ using `grpc <https://github.com/googleapis/
 googleapis/blob/master/google/pubsub/v1/pubsub.proto>`_ rather than
-inheriting from :py:class:`gordon_janitor_gcp.clients.http.\
-AIOGoogleHTTPClient`.
+inheriting from :py:class:`gordon_janitor_gcp.AIOGoogleHTTPClient`.
 
 .. attention::
 
@@ -36,6 +35,7 @@ To use:
 .. code-block:: python
 
     import asyncio
+    import gordon_janitor_gcp
 
     config = {
         'keyfile': '/path/to/keyfile.json',
@@ -44,7 +44,8 @@ To use:
     }
     changes_channel = asyncio.Queue()
 
-    publisher = get_publisher(config, changes_channel)
+    publisher = gordon_janitor_gcp.get_publisher(
+        config, changes_channel)
 
     loop = asyncio.get_event_loop()
     try:
@@ -67,6 +68,9 @@ from gordon_janitor import interfaces
 
 from gordon_janitor_gcp import exceptions
 from gordon_janitor_gcp.clients import auth
+
+
+__all__ = ('get_publisher', 'GooglePubsubPublisher',)
 
 
 def _init_pubsub_client(auth_client, config):

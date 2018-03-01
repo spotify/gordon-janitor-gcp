@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__all__ = (
+    'GCPGordonJanitorError', 'GCPAuthError', 'GCPHTTPError', 'GCPConfigError'
+)
+
 
 # TODO: Inherit from a general gordon janitor exception once added to
 #       the core janitor package
