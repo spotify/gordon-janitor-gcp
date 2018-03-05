@@ -44,11 +44,8 @@ def get_publisher(config, changes_channel, **kw):
     Returns:
         A :class:`GPubsubPublisher` instance.
     """
-    publisher._validate_pubsub_config(config)
-    auth_client = publisher._init_pubsub_auth(config)
-    pubsub_client = publisher._init_pubsub_client(auth_client, config)
-    return publisher.GPubsubPublisher(
-        config, pubsub_client, changes_channel, **kw)
+    builder = publisher.GPubsubPublisherBuilder(config, changes_channel, **kw)
+    return builder.build_publisher()
 
 
 def get_reconciler(config, rrset_channel, changes_channel, **kw):
@@ -69,8 +66,6 @@ def get_reconciler(config, rrset_channel, changes_channel, **kw):
     Returns:
         A :class:`GDNSReconciler` instance.
     """
-    reconciler._validate_dns_config(config)
-    auth_client = reconciler._init_dns_auth(config)
-    dns_client = reconciler._init_dns_client(auth_client, config)
-    return reconciler.GDNSReconciler(
-        config, dns_client, rrset_channel, changes_channel, **kw)
+    builder = reconciler.GDNSReconcilerBuilder(
+        config, rrset_channel, changes_channel, **kw)
+    return builder.build_reconciler()

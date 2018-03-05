@@ -73,64 +73,82 @@ from gordon_janitor_gcp.clients import auth
 __all__ = ('GPubsubPublisher',)
 
 
-def _init_pubsub_client(auth_client, config):
-    # Silly emulator constraints
-    creds = getattr(auth_client, 'creds', None)
-    _client = pubsub.PublisherClient(credentials=creds)
+class GPubsubPublisherBuilder:
+    """Build and configure a :class:`GPubsubPublisher` object.
 
-    topic = config['topic']
-    try:
-        _client.create_topic(topic)
-    except google_exceptions.AlreadyExists:
-        # already created
-        pass
-    except Exception as e:
-        msg = f'Error trying to create topic "{topic}": {e}'
-        logging.error(msg, exc_info=e)
-        raise exceptions.GCPGordonJanitorError(msg)
+    Args:
+        config (dict): Google Cloud Pub/Sub-related configuration.
+        changes_channel (asyncio.Queue): queue to publish message to
+            make corrections to Cloud DNS.
+    """
+    def __init__(self, config, changes_channel, **kwargs):
+        self.config = config
+        self.changes_channel = changes_channel
+        self.kwargs = kwargs
 
-    return _client
+    def _validate_config(self):
+        # req keys: keyfile, project, topic
+        # TODO (lynn): keyfile won't be required once we support other
+        #              auth methods
+        if not self.config.get('keyfile'):
+            msg = ('The path to a Service Account JSON keyfile is required to '
+                   'authenticate for Google Cloud Pub/Sub.')
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+        if not self.config.get('project'):
+            msg = 'The GCP project where Cloud Pub/Sub is located is required.'
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+        if not self.config.get('topic'):
+            msg = ('A topic for the client to publish to in Cloud Pub/Sub is '
+                   'required.')
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
 
+        topic_prefix = f'projects/{self.config["project"]}/topics/'
+        if not self.config.get('topic').startswith(topic_prefix):
+            self.config['topic'] = f'{topic_prefix}{self.config["topic"]}'
 
-def _init_pubsub_auth(config):
-    # a publisher client can't be made with credentials if a channel is
-    # already made/provided, which is what happens when the emulator is
-    # running ಠ_ಠ
-    # See (https://github.com/GoogleCloudPlatform/
-    #      google-cloud-python/pull/4839)
-    auth_client = None
-    if not os.environ.get('PUBSUB_EMULATOR_HOST'):
-        scopes = config.get('scopes')
-        # creating a dummy `session` as the pubsub.PublisherClient never
-        # uses it but without it aiohttp will complain about an unclosed
-        # client session that would otherwise be made by default
-        auth_client = auth.GAuthClient(
-            keyfile=config['keyfile'], scopes=scopes, session='noop')
-    return auth_client
+    def _init_auth(self):
+        # a publisher client can't be made with credentials if a channel is
+        # already made/provided, which is what happens when the emulator is
+        # running ಠ_ಠ
+        # See (https://github.com/GoogleCloudPlatform/
+        #      google-cloud-python/pull/4839)
+        auth_client = None
+        if not os.environ.get('PUBSUB_EMULATOR_HOST'):
+            scopes = self.config.get('scopes')
+            # creating a dummy `session` as the pubsub.PublisherClient never
+            # uses it but without it aiohttp will complain about an unclosed
+            # client session that would otherwise be made by default
+            auth_client = auth.GAuthClient(
+                keyfile=self.config['keyfile'], scopes=scopes, session='noop')
+        return auth_client
 
+    def _init_client(self, auth_client):
+        # Silly emulator constraints
+        creds = getattr(auth_client, 'creds', None)
+        _client = pubsub.PublisherClient(credentials=creds)
 
-def _validate_pubsub_config(config):
-    # req keys: keyfile, project, topic
-    # TODO (lynn): keyfile won't be required once we support other
-    #              auth methods
-    if not config.get('keyfile'):
-        msg = ('The path to a Service Account JSON keyfile is required to '
-               'authenticate for Google Cloud Pub/Sub.')
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
-    if not config.get('project'):
-        msg = 'The GCP project where Cloud Pub/Sub is located is required.'
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
-    if not config.get('topic'):
-        msg = ('A topic for the client to publish to in Cloud Pub/Sub is '
-               'required.')
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
+        topic = self.config['topic']
+        try:
+            _client.create_topic(topic)
+        except google_exceptions.AlreadyExists:
+            # already created
+            pass
+        except Exception as e:
+            msg = f'Error trying to create topic "{topic}": {e}'
+            logging.error(msg, exc_info=e)
+            raise exceptions.GCPGordonJanitorError(msg)
 
-    topic_prefix = f'projects/{config["project"]}/topics/'
-    if not config.get('topic').startswith(topic_prefix):
-        config['topic'] = f'{topic_prefix}{config["topic"]}'
+        return _client
+
+    def build_publisher(self):
+        self._validate_config()
+        auth_client = self._init_auth()
+        pubsub_client = self._init_client(auth_client)
+        return GPubsubPublisher(
+            self.config, pubsub_client, self.changes_channel, **self.kwargs)
 
 
 @zope.interface.implementer(interfaces.IPublisher)

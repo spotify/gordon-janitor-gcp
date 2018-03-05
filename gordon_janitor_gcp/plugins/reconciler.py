@@ -69,33 +69,55 @@ from gordon_janitor_gcp.clients import gdns
 __all__ = ('GDNSReconciler',)
 
 
-def _init_dns_client(auth_client, config):
-    kwargs = {
-        'project': config['project'],
-        'api_version': config.get('api_version'),
-        'auth_client': auth_client
-    }
-    return gdns.GDNSClient(**kwargs)
+class GDNSReconcilerBuilder:
+    """Build and configure a :class:`GDNSReconciler` object.
 
+    Args:
+        config (dict): Google Cloud DNS-related configuration.
+        rrset_channel (asyncio.Queue): queue from which to consume
+            record set messages to validate.
+        changes_channel (asyncio.Queue): queue to publish message to
+            make corrections to Cloud DNS.
+    """
+    def __init__(self, config, rrset_channel, changes_channel, **kwargs):
+        self.config = config
+        self.rrset_channel = rrset_channel
+        self.changes_channel = changes_channel
+        self.kwargs = kwargs
 
-def _init_dns_auth(config):
-    return auth.GAuthClient(
-        keyfile=config['keyfile'], scopes=config.get('scopes'))
+    def _validate_config(self):
+        # req keys: keyfile, project, topic
+        # TODO (lynn): keyfile won't be required once we support other
+        #              auth methods
+        if not self.config.get('keyfile'):
+            msg = ('The path to a Service Account JSON keyfile is required to '
+                   'authenticate for Google Cloud Pub/Sub.')
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+        if not self.config.get('project'):
+            msg = 'The GCP project where Cloud DNS is located is required.'
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
 
+    def _init_auth(self):
+        return auth.GAuthClient(
+            keyfile=self.config['keyfile'], scopes=self.config.get('scopes'))
 
-def _validate_dns_config(config):
-    # req keys: keyfile, project, topic
-    # TODO (lynn): keyfile won't be required once we support other
-    #              auth methods
-    if not config.get('keyfile'):
-        msg = ('The path to a Service Account JSON keyfile is required to '
-               'authenticate for Google Cloud Pub/Sub.')
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
-    if not config.get('project'):
-        msg = 'The GCP project where Cloud DNS is located is required.'
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
+    def _init_client(self, auth_client):
+        kwargs = {
+            'project': self.config['project'],
+            'api_version': self.config.get('api_version'),
+            'auth_client': auth_client
+        }
+        return gdns.GDNSClient(**kwargs)
+
+    def build_reconciler(self):
+        self._validate_config()
+        auth_client = self._init_auth()
+        dns_client = self._init_client(auth_client)
+        return GDNSReconciler(
+            self.config, dns_client, self.rrset_channel, self.changes_channel,
+            **self.kwargs)
 
 
 @zope.interface.implementer(interfaces.IReconciler)
