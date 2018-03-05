@@ -6,13 +6,7 @@ API Clients
 HTTP Sessions
 -------------
 
-By default, the HTTP session used for getting credentials is reused for
-API calls (recommended if there are many). If this is not desired, you
-can pass in your own :class:`aiohttp.ClientSession` instance into
-:class:`GDNSClient`, :class:`GCEClient`, :class:`GCRMClient`, or
-:class:`AIOConnection`. The auth client :class:`GAuthClient` may also
-take an explicit session object, but is not required to assert a
-different HTTP session is used for the API calls.
+By default, the HTTP session used for getting credentials is reused for API calls (recommended if there are many). If this is not desired, you can pass in your own :class:`aiohttp.ClientSession` instance into :class:`GDNSClient`, :class:`GCEClient`, :class:`GCRMClient`, or :class:`AIOConnection`. The auth client :class:`GAuthClient` may also take an explicit session object, but is not required to assert a different HTTP session is used for the API calls.
 
 .. code-block:: python
 
