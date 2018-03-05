@@ -50,8 +50,8 @@ async def test_done(exp_log_records, timeout, side_effect, kwargs,
     """Proper cleanup with or without pending tasks."""
     caplog.set_level(logging.DEBUG)
 
-    mock_msg1 = mocker.Mock(concurrent.futures.Future, autospec=True)
-    mock_msg2 = mocker.Mock(concurrent.futures.Future, autospec=True)
+    mock_msg1 = mocker.Mock(concurrent.futures.Future)
+    mock_msg2 = mocker.Mock(concurrent.futures.Future)
 
     if side_effect:
         mock_msg1.done.side_effect = side_effect

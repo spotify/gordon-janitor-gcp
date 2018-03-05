@@ -54,7 +54,7 @@ def test_create_gcp_rrset():
 
 
 def test_dns_client_default(mocker):
-    auth_client = mocker.Mock(auth.GAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient)
     creds = mocker.Mock()
     auth_client.creds = creds
     session = aiohttp.ClientSession()
@@ -69,7 +69,7 @@ def test_dns_client_default(mocker):
 
 @pytest.fixture
 def client(mocker):
-    auth_client = mocker.Mock(auth.GAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient)
     creds = mocker.Mock()
     auth_client.creds = creds
     session = aiohttp.ClientSession()

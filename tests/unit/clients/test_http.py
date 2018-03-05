@@ -40,7 +40,7 @@ def test_http_client_default(provide_session, mocker):
     if provide_session:
         session = aiohttp.ClientSession()
 
-    auth_client = mocker.Mock(auth.GAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient)
     auth_client._session = aiohttp.ClientSession()
     creds = mocker.Mock()
     auth_client.creds = creds

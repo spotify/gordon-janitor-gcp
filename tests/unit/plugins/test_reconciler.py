@@ -40,7 +40,7 @@ def full_config(minimal_config):
 
 @pytest.fixture
 def dns_client(mocker, monkeypatch):
-    mock = mocker.Mock(gdns.GDNSClient, autospec=True)
+    mock = mocker.Mock(gdns.GDNSClient)
     mock._session = mocker.Mock()
     mock._session.close.return_value = True
     monkeypatch.setattr(
@@ -59,7 +59,7 @@ def config(fake_keyfile):
 
 @pytest.fixture
 def auth_client(mocker, monkeypatch):
-    mock = mocker.Mock(auth.GAuthClient, autospec=True)
+    mock = mocker.Mock(auth.GAuthClient)
     monkeypatch.setattr(
         'gordon_janitor_gcp.plugins.reconciler.auth.GAuthClient', mock)
     return mock
@@ -120,7 +120,7 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
     coro1 = asyncio.ensure_future(publish_change_messages())
     coro2 = asyncio.ensure_future(validate_rrsets_by_zone())
 
-    mock_task = mocker.MagicMock(asyncio.Task, autospec=True)
+    mock_task = mocker.MagicMock(asyncio.Task)
     mock_task.all_tasks.side_effect = [
         # in the `while iterations` loop twice
         # timeout of `0` will never hit this loop

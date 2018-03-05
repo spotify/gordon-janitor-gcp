@@ -39,8 +39,8 @@ def session():
 
 @pytest.fixture
 def mock_service_acct(mocker, monkeypatch):
-    mock_creds = mocker.MagicMock(service_account.Credentials, autospec=True)
-    sa_creds = mocker.MagicMock(service_account.Credentials, autospec=True)
+    mock_creds = mocker.MagicMock(service_account.Credentials)
+    sa_creds = mocker.MagicMock(service_account.Credentials)
     sa_creds._make_authorization_grant_assertion.return_value = 'deadb33f=='
     mock_creds.from_service_account_info.return_value = sa_creds
 
@@ -133,7 +133,7 @@ def test_auth_client_raises_not_found(tmpdir, caplog):
 #####
 @pytest.fixture
 def mock_parse_expiry(mocker, monkeypatch):
-    mock = mocker.MagicMock(oauth_client, autospec=True)
+    mock = mocker.MagicMock(oauth_client)
     mock._parse_expiry.return_value = datetime.datetime(2018, 1, 1, 12, 0, 0)
     monkeypatch.setattr('gordon_janitor_gcp.clients.auth._client', mock)
     return mock
