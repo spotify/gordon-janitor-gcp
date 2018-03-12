@@ -24,7 +24,8 @@ User's Guide
 .. toctree::
    :maxdepth: 1
 
-   api
+   plugins
+   clients
    config
    exceptions
 

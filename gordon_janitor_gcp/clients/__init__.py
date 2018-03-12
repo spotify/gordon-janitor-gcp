@@ -14,24 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Mainly for easier documentation reading
+from gordon_janitor_gcp.clients.auth import *  # noqa: F403
+from gordon_janitor_gcp.clients.gce import *  # noqa: F403
+from gordon_janitor_gcp.clients.gcrm import *  # noqa: F403
+from gordon_janitor_gcp.clients.gdns import *  # noqa: F403
+from gordon_janitor_gcp.clients.http import *  # noqa: F403
+
+
 __all__ = (
-    'GCPGordonJanitorError', 'GCPAuthError', 'GCPHTTPError', 'GCPConfigError'
+    auth.__all__ +  # noqa: F405
+    gce.__all__ +  # noqa: F405
+    gcrm.__all__ +  # noqa: F405
+    gdns.__all__ +  # noqa: F405
+    http.__all__  # noqa: F405
 )
-
-
-# TODO: Inherit from a general gordon janitor exception once added to
-#       the core janitor package
-class GCPGordonJanitorError(Exception):
-    """Tmp base exception until gordon_janitor has exceptions"""
-
-
-class GCPAuthError(GCPGordonJanitorError):
-    """Authentication error with Google Cloud."""
-
-
-class GCPHTTPError(GCPGordonJanitorError):
-    """An HTTP error occured."""
-
-
-class GCPConfigError(GCPGordonJanitorError):
-    """Improper or incomplete configuration for plugin."""

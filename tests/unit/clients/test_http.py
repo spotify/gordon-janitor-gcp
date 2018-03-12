@@ -22,9 +22,9 @@ import aiohttp
 import pytest
 from aioresponses import aioresponses
 
-from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp import http_client
+from gordon_janitor_gcp.clients import auth
+from gordon_janitor_gcp.clients import http
 from tests.unit import conftest
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
@@ -35,17 +35,16 @@ logging.getLogger('asyncio').setLevel(logging.WARNING)
 #####
 @pytest.mark.parametrize('provide_session', [True, False])
 def test_http_client_default(provide_session, mocker):
-    """AIOGoogleHTTPClient is created with expected attributes."""
+    """AIOConnection is created with expected attributes."""
     session = None
     if provide_session:
         session = aiohttp.ClientSession()
 
-    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient)
     auth_client._session = aiohttp.ClientSession()
     creds = mocker.Mock()
     auth_client.creds = creds
-    client = http_client.AIOGoogleHTTPClient(auth_client=auth_client,
-                                             session=session)
+    client = http.AIOConnection(auth_client=auth_client, session=session)
 
     if provide_session:
         assert session is client._session
@@ -60,8 +59,7 @@ def test_http_client_default(provide_session, mocker):
 @pytest.fixture
 def client(mocker, auth_client):
     session = aiohttp.ClientSession()
-    client = http_client.AIOGoogleHTTPClient(auth_client=auth_client,
-                                             session=session)
+    client = http.AIOConnection(auth_client=auth_client, session=session)
     yield client
     session.close()
 
@@ -225,7 +223,7 @@ async def test_get_json(json_func, exp_resp, client, monkeypatch, caplog):
 async def test_list_all(mocker, max_pages):
     number_of_calls = 0
 
-    class TestClient(http_client.GPaginatorMixin):
+    class TestClient(http.GPaginatorMixin):
         async def get_json(self, url, params=None):
             nonlocal number_of_calls
             if number_of_calls < (max_pages - 1):

@@ -1,7 +1,7 @@
 Configuration
 =============
 
-Configuring Google Cloud Platform plugins for the `Gordon Janitor Service <https://github.com/spotify/gordon-janitor>`_.
+Configuring Google Cloud Platform :doc:`plugins` for the `gordon-janitor`_ service.
 
 Example Configuration
 ---------------------
@@ -12,8 +12,8 @@ An example of a ``gordon-janitor.toml`` file for GCP-specific plugins:
     :language: ini
 
 
-Configuration
--------------
+Plugin Configuration
+--------------------
 
 The following sections are supported:
 
@@ -65,3 +65,6 @@ All configuration options above in the general ``[gcp]`` may be used here. Addit
 .. attention::
 
     For the Pub/Sub plugin, ``keyfile`` is not required when running against the `Pub/Sub Emulator <https://cloud.google.com/pubsub/docs/emulator>`_ that Google provides.
+
+
+.. _`gordon-janitor`: https://github.com/spotify/gordon-janitor

@@ -17,7 +17,7 @@
 Module to create a client interacting with Google Cloud authentication.
 
 An instantiated client is needed for interacting with any of the Google
-APIs via the ``gordon_janitor_gcp.http_client``.
+APIs via the :class:`.AIOConnection`.
 
 Only service account (JSON Web Tokens/JWT) authentication is currently
 supported. To setup a service account, follow `Google's docs <https://
@@ -28,10 +28,11 @@ To use:
 .. code-block:: pycon
 
     >>> import asyncio
-    >>> from google_janitor_gcp import auth
+    >>> import google_janitor_gcp
     >>> loop = asyncio.get_event_loop()
     >>> keyfile = '/path/to/service_account_keyfile.json'
-    >>> auth_client = auth.GoogleAuthClient(keyfile=keyfile)
+    >>> auth_client = google_janitor_gcp.GAuthClient(
+    ...   keyfile=keyfile)
     >>> auth_clientcreds.token is None
     True
     >>> loop.run_until_complete(auth_client.refresh_token())
@@ -56,7 +57,10 @@ REQ_LOG_FMT = 'Request: "{method} {url}"'
 RESP_LOG_FMT = 'Response: "{method} {url}" {status} {reason}'
 
 
-class GoogleAuthClient:
+__all__ = ('GAuthClient', )
+
+
+class GAuthClient:
     """Async client to authenticate against Google Cloud APIs.
 
     Attributes:
@@ -72,9 +76,9 @@ class GoogleAuthClient:
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests.
         loop: (optional) asyncio event loop to use for HTTP requests.
-            NOTE: if ``session`` is given, then ``loop`` will be ignored.
-            Otherwise, ``loop`` will be used to create a session, if
-            provided.
+            NOTE: if :obj:`session` is given, then :obj:`loop` will be
+            ignored. Otherwise, :obj:`loop` will be used to create a
+            session, if provided.
 
     """
 
@@ -137,9 +141,9 @@ class GoogleAuthClient:
         """Refresh oauth access token attached to this HTTP session.
 
         Raises:
-            exceptions.GCPAuthError: if no token was found in the
+            :exc:`.GCPAuthError`: if no token was found in the
                 response.
-            exceptions.GCPHTTPError: if any exception occurred.
+            :exc:`.GCPHTTPError`: if any exception occurred.
         """
         url, headers, body = self._setup_token_request()
 

@@ -17,20 +17,19 @@
 Client module to interact with the Google Cloud DNS API.
 
 This client makes use of the asynchronus HTTP client as defined in
-:py:mod:`gordon_janitor_gcp.http_client`, and therefore must use
-service account/JWT authentication (for now).
+:class:`.AIOConnection`, and therefore must use service account/JWT
+authentication (for now).
 
 To use:
 
 .. code-block:: python
 
     import asyncio
-
-    from gordon_janitor_gcp import auth
+    import gordon_janitor_gcp
 
     keyfile = '/path/to/service_account_keyfile.json'
-    auth_client = auth.GoogleAuthClient(keyfile=keyfile)
-    client = AIOGoogleDNSClient(
+    auth_client = gordon_janitor_gcp.GAuthClient(keyfile=keyfile)
+    client = gordon_janitor_gcp.GDNSClient(
         project='my-dns-project', auth_client=auth_client)
 
     async def print_first_record(client)
@@ -50,7 +49,10 @@ import logging
 
 import attr
 
-from gordon_janitor_gcp import http_client
+from gordon_janitor_gcp.clients import http
+
+
+__all__ = ('GCPResourceRecordSet', 'GDNSClient',)
 
 
 @attr.s
@@ -60,8 +62,8 @@ class GCPResourceRecordSet:
     Args:
         name (str): Name/label.
         type (str): Record type (see `Google's supported records
-            <https://cloud.google.com/dns/overview#supported_dns_r
-            ecord_types>`_ for valid types).
+            <https://cloud.google.com/dns/overview#supported_dns_record_
+            types>`_ for valid types).
         rrdatas (list): Record data according to RFC 1034§3.6.1 and
             RFC 1035§5.
         ttl (int): (optional) Number of seconds that the record set can
@@ -76,7 +78,7 @@ class GCPResourceRecordSet:
     ttl = attr.ib(type=int, default=300)
 
 
-class AIOGoogleDNSClient(http_client.AIOGoogleHTTPClient):
+class GDNSClient(http.AIOConnection):
     """Async HTTP client to interact with Google Cloud DNS API.
 
     Attributes:
@@ -84,12 +86,12 @@ class AIOGoogleDNSClient(http_client.AIOGoogleHTTPClient):
 
     Args:
         project (str): Google project ID that hosts the managed DNS.
-        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
-            to manage authentication for HTTP API requests.
+        auth_client (.GAuthClient): client to manage authentication for
+            HTTP API requests.
         api_version (str): DNS API endpoint version. Defaults to ``v1``.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
-            session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
+            session to use for sending requests. Defaults to the session
+            object attached to :obj:`auth_client` if not provided.
     """
     BASE_URL = 'https://www.googleapis.com/dns'
 
@@ -111,7 +113,7 @@ class AIOGoogleDNSClient(http_client.AIOGoogleHTTPClient):
         Args:
             zone (str): Desired managed zone to query.
         Returns:
-            list of :py:class:`GCPResourceRecordSet` instances.
+            list of :class:`GCPResourceRecordSet` instances.
         """
         url = f'{self._base_url}/managedZones/{zone}/rrsets'
 

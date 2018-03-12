@@ -95,8 +95,8 @@ setup(
     packages=PACKAGES,
     entry_points={
         'gordon_janitor.plugins': [
-            'gcp.gdns = gordon_janitor_gcp.gdns_reconciler.GoogleDNSReconciler',
-            'gcp.gpubsub = gordon_janitor_gcp.gpubsub_publisher:get_publisher',
+            'gcp.gdns = gordon_janitor_gcp:get_reconciler',
+            'gcp.gpubsub = gordon_janitor_gcp:get_publisher',
         ],
     },
     classifiers=CLASSIFIERS,

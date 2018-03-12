@@ -13,25 +13,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-__all__ = (
-    'GCPGordonJanitorError', 'GCPAuthError', 'GCPHTTPError', 'GCPConfigError'
-)
-
-
-# TODO: Inherit from a general gordon janitor exception once added to
-#       the core janitor package
-class GCPGordonJanitorError(Exception):
-    """Tmp base exception until gordon_janitor has exceptions"""
-
-
-class GCPAuthError(GCPGordonJanitorError):
-    """Authentication error with Google Cloud."""
-
-
-class GCPHTTPError(GCPGordonJanitorError):
-    """An HTTP error occured."""
-
-
-class GCPConfigError(GCPGordonJanitorError):
-    """Improper or incomplete configuration for plugin."""

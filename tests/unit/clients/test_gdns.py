@@ -21,8 +21,8 @@ import attr
 import pytest
 from aioresponses import aioresponses
 
-from gordon_janitor_gcp import auth
-from gordon_janitor_gcp import gdns_client
+from gordon_janitor_gcp.clients import auth
+from gordon_janitor_gcp.clients import gdns
 
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
@@ -36,12 +36,12 @@ def test_create_gcp_rrset():
         'rrdatas': ['10.1.2.3'],
         'ttl': 500
     }
-    rrset = gdns_client.GCPResourceRecordSet(**data)
+    rrset = gdns.GCPResourceRecordSet(**data)
     assert data == attr.asdict(rrset)
 
     # default TTL when not provided
     data.pop('ttl')
-    rrset = gdns_client.GCPResourceRecordSet(**data)
+    rrset = gdns.GCPResourceRecordSet(**data)
     data['ttl'] = 300
     assert data == attr.asdict(rrset)
 
@@ -50,16 +50,16 @@ def test_create_gcp_rrset():
         'name': 'test'
     }
     with pytest.raises(TypeError):
-        gdns_client.GCPResourceRecordSet(**missing_params)
+        gdns.GCPResourceRecordSet(**missing_params)
 
 
 def test_dns_client_default(mocker):
-    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient)
     creds = mocker.Mock()
     auth_client.creds = creds
     session = aiohttp.ClientSession()
 
-    client = gdns_client.AIOGoogleDNSClient(
+    client = gdns.GDNSClient(
         'a-project', auth_client, session=session)
 
     assert 'a-project' == client.project
@@ -69,11 +69,11 @@ def test_dns_client_default(mocker):
 
 @pytest.fixture
 def client(mocker):
-    auth_client = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    auth_client = mocker.Mock(auth.GAuthClient)
     creds = mocker.Mock()
     auth_client.creds = creds
     session = aiohttp.ClientSession()
-    client = gdns_client.AIOGoogleDNSClient(
+    client = gdns.GDNSClient(
         'a-project', auth_client=auth_client, session=session)
     yield client
     # test teardown
@@ -103,7 +103,7 @@ async def test_get_records_for_zone(fake_response_data, client, caplog,
         records = await client.get_records_for_zone('a-zone')
 
         assert all(
-            [isinstance(r, gdns_client.GCPResourceRecordSet) for r in records])
+            [isinstance(r, gdns.GCPResourceRecordSet) for r in records])
         assert 6 == len(records)
 
     assert 1 == len(caplog.records)

@@ -20,8 +20,8 @@ record sets from Google Cloud DNS, then publish corrective messages to
 the internal ``changes_channel`` if there are differences.
 
 This client makes use of the asynchronous DNS client as defined in
-:py:mod:`gordon_janitor_gcp.gdns_client`, and therefore must use
-service account/JWT authentication (for now).
+:class:`.GDNSClient`, and therefore must use service account/JWT
+authentication (for now).
 
 See :doc:`config` for the required Google DNS configuration.
 
@@ -35,6 +35,7 @@ To use:
 .. code-block:: python
 
     import asyncio
+    import gordon_janitor_gcp
 
     config = {
         'keyfile': '/path/to/keyfile.json',
@@ -43,7 +44,7 @@ To use:
     rrset_chnl = asyncio.Queue()
     changes_chnl = asyncio.Queue()
 
-    reconciler = GoogleDNSReconciler(
+    reconciler = gordon_janitor_gcp.GDNSReconciler(
         config, rrset_chnl, changes_chnl)
 
     loop = asyncio.get_event_loop()
@@ -57,25 +58,19 @@ import asyncio
 import logging
 
 import attr
+import zope.interface
+from gordon_janitor import interfaces
 
-from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp import gdns_client
+from gordon_janitor_gcp.clients import auth
+from gordon_janitor_gcp.clients import gdns
 
 
-class GoogleDNSReconciler:
-    """Validate current records in DNS against desired source of truth.
+__all__ = ('GDNSReconciler',)
 
-    ``GoogleDNSReconciler`` will create a change message for the
-    configured publisher client plugin to consume if there is a
-    discrepancy between records in Google Cloud DNS and the desired
-    state.
 
-    Once validation is done, the Reconciler will emit a ``None`` message
-    to the ``changes_channel`` queue, signalling a Publisher client
-    (e.g. ``gpubsub_client.AIOGooglePubsubClient``) to publish the
-    message to a pub/sub to which `Gordon
-    <https://github.com/spotify/gordon>`_ subscribes.
+class GDNSReconcilerBuilder:
+    """Build and configure a :class:`GDNSReconciler` object.
 
     Args:
         config (dict): Google Cloud DNS-related configuration.
@@ -84,63 +79,92 @@ class GoogleDNSReconciler:
         changes_channel (asyncio.Queue): queue to publish message to
             make corrections to Cloud DNS.
     """
-
-    _ASYNC_METHODS = ['publish_change_messages', 'validate_rrsets_by_zone']
-
-    def __init__(self, config, rrset_channel=None, changes_channel=None, **kw):
+    def __init__(self, config, rrset_channel, changes_channel, **kwargs):
         self.config = config
         self.rrset_channel = rrset_channel
         self.changes_channel = changes_channel
-        self.cleanup_timeout = config.get('cleanup_timeout', 60)
-        self.dns_client = None  # set in _init
-        self._init()
+        self.kwargs = kwargs
 
-    def _init(self):
-        auth_client = self._init_auth()
-        self.dns_client = self._init_dns_client(auth_client)
-
-    def _init_auth(self):
+    def _validate_config(self):
+        # req keys: keyfile, project, topic
         # TODO (lynn): keyfile won't be required once we support other
         #              auth methods
-        try:
-            keyfile = self.config['keyfile']
-        except KeyError:
-            msg = ('The path to a Service Account JSON keyfile is required '
-                   'to authenticate for Google Cloud DNS.')
+        if not self.config.get('keyfile'):
+            msg = ('The path to a Service Account JSON keyfile is required to '
+                   'authenticate for Google Cloud Pub/Sub.')
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
-
-        scopes = self.config.get('scopes')
-        return auth.GoogleAuthClient(keyfile=keyfile, scopes=scopes)
-
-    def _init_dns_client(self, auth_client):
-        # TODO: (FEATURE) maybe support inference of project based
-        #       on os.environ or keyfile
-        try:
-            project = self.config['project']
-        except KeyError:
+        if not self.config.get('project'):
             msg = 'The GCP project where Cloud DNS is located is required.'
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
 
+    def _init_auth(self):
+        return auth.GAuthClient(
+            keyfile=self.config['keyfile'], scopes=self.config.get('scopes'))
+
+    def _init_client(self, auth_client):
         kwargs = {
-            'project': project,
+            'project': self.config['project'],
             'api_version': self.config.get('api_version'),
             'auth_client': auth_client
         }
-        return gdns_client.AIOGoogleDNSClient(**kwargs)
+        return gdns.GDNSClient(**kwargs)
+
+    def build_reconciler(self):
+        self._validate_config()
+        auth_client = self._init_auth()
+        dns_client = self._init_client(auth_client)
+        return GDNSReconciler(
+            self.config, dns_client, self.rrset_channel, self.changes_channel,
+            **self.kwargs)
+
+
+@zope.interface.implementer(interfaces.IReconciler)
+class GDNSReconciler:
+    """Validate current records in DNS against desired source of truth.
+
+    :class:`.GDNSReconciler` will create a change message for the
+    configured publisher client plugin to consume if there is a
+    discrepancy between records in Google Cloud DNS and the desired
+    state.
+
+    Once validation is done, the Reconciler will emit a ``None`` message
+    to the ``changes_channel`` queue, signalling a Publisher client
+    (e.g. :class:`.GPubsubPublisher`) to publish the
+    message to a pub/sub to which `Gordon <https://github.com/spotify/
+    gordon>`_ subscribes.
+
+    Args:
+        config (dict): Google Cloud DNS-related configuration.
+        dns_client (.GDNSClient): client to interact with Google Cloud
+            DNS API.
+        rrset_channel (asyncio.Queue): queue from which to consume
+            record set messages to validate.
+        changes_channel (asyncio.Queue): queue to publish message to
+            make corrections to Cloud DNS.
+    """
+
+    _ASYNC_METHODS = ['publish_change_messages', 'validate_rrsets_by_zone']
+
+    def __init__(self, config, dns_client, rrset_channel=None,
+                 changes_channel=None, **kw):
+        self.rrset_channel = rrset_channel
+        self.changes_channel = changes_channel
+        self.cleanup_timeout = config.get('cleanup_timeout', 60)
+        self.dns_client = dns_client
 
     async def done(self):
-        """Clean up and notify ``changes_channel`` of no more messages.
+        """Clean up & notify :obj:`changes_channel` of no more messages.
 
         This method collects all tasks that this particular class
         initiated, and will cancel them if they don't complete within
         the configured timeout period.
 
-        Once all tasks are done, `None` is added to the
-        :py:obj:`self.changes_channel` to signify that it has no
-        more work to process. Then the HTTP session attached to the
-        :py:obj:`self.dns_client` is properly closed.
+        Once all tasks are done, ``None`` is added to the
+        :obj:`changes_channel` to signify that it has no more work to
+        process. Then the HTTP session attached to the :obj:`dns_client`
+        is properly closed.
         """
         all_tasks = asyncio.Task.all_tasks()
         tasks_to_clear = [
@@ -174,7 +198,7 @@ class GoogleDNSReconciler:
         logging.info(msg)
 
     async def publish_change_messages(self, desired_rrsets, action='additions'):
-        """Publish change messages to the ``changes_channel``.
+        """Publish change messages to the :obj:`changes_channel`.
 
         NOTE: Only `'additions'` are currently supported. `'deletions'`
         may be supported in the future.
@@ -228,7 +252,7 @@ class GoogleDNSReconciler:
                 Cloud DNS API's response.
         """
         desired_rrsets = [
-            gdns_client.GCPResourceRecordSet(**record) for record in rrsets
+            gdns.GCPResourceRecordSet(**record) for record in rrsets
         ]
 
         actual_rrsets = await self.dns_client.get_records_for_zone(zone)
@@ -249,11 +273,11 @@ class GoogleDNSReconciler:
         await self.publish_change_messages(missing_rrsets, action='additions')
 
     async def start(self):
-        """Start consuming from :py:obj:`self.rrset_channel`.
+        """Start consuming from :obj:`rrset_channel`.
 
         Once ``None`` is received from the channel, finish processing
         records and emit a ``None`` message to the
-        :py:obj:`self.changes_channel`.
+        :obj:`changes_channel`.
         """
         while True:
             desired_rrset = await self.rrset_channel.get()

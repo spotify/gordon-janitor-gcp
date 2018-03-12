@@ -24,8 +24,8 @@ from aioresponses import aioresponses
 from google.oauth2 import _client as oauth_client
 from google.oauth2 import service_account
 
-from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
+from gordon_janitor_gcp.clients import auth
 
 logging.getLogger('asyncio').setLevel(logging.WARNING)
 
@@ -39,12 +39,12 @@ def session():
 
 @pytest.fixture
 def mock_service_acct(mocker, monkeypatch):
-    mock_creds = mocker.MagicMock(service_account.Credentials, autospec=True)
-    sa_creds = mocker.MagicMock(service_account.Credentials, autospec=True)
+    mock_creds = mocker.MagicMock(service_account.Credentials)
+    sa_creds = mocker.MagicMock(service_account.Credentials)
     sa_creds._make_authorization_grant_assertion.return_value = 'deadb33f=='
     mock_creds.from_service_account_info.return_value = sa_creds
 
-    patch = 'gordon_janitor_gcp.auth.service_account.Credentials'
+    patch = 'gordon_janitor_gcp.clients.auth.service_account.Credentials'
     monkeypatch.setattr(patch, mock_creds)
     return mock_creds
 
@@ -69,7 +69,7 @@ params = [
 def test_auth_client_default(scopes, provide_session, provide_loop, event_loop,
                              fake_keyfile, fake_keyfile_data, mock_service_acct,
                              session):
-    """GoogleAuthClient is created with expected attributes."""
+    """GAuthClient is created with expected attributes."""
     kwargs = {
         'keyfile': fake_keyfile,
         'scopes': scopes,
@@ -79,7 +79,7 @@ def test_auth_client_default(scopes, provide_session, provide_loop, event_loop,
     if provide_loop:
         kwargs['loop'] = event_loop
 
-    client = auth.GoogleAuthClient(**kwargs)
+    client = auth.GAuthClient(**kwargs)
 
     assert fake_keyfile_data == client._keydata
 
@@ -110,7 +110,7 @@ def test_auth_client_raises_json(tmpdir, caplog):
     tmp_keyfile.write('broken json')
 
     with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        auth.GoogleAuthClient(keyfile=tmp_keyfile)
+        auth.GAuthClient(keyfile=tmp_keyfile)
 
     e.match(f'Keyfile {tmp_keyfile} is not valid JSON.')
     assert 1 == len(caplog.records)
@@ -122,7 +122,7 @@ def test_auth_client_raises_not_found(tmpdir, caplog):
     no_keyfile = os.path.join(tmp_keydir, 'not-existent.json')
 
     with pytest.raises(exceptions.GCPGordonJanitorError) as e:
-        auth.GoogleAuthClient(keyfile=no_keyfile)
+        auth.GAuthClient(keyfile=no_keyfile)
 
     e.match(f'Keyfile {no_keyfile} was not found.')
     assert 1 == len(caplog.records)
@@ -133,15 +133,15 @@ def test_auth_client_raises_not_found(tmpdir, caplog):
 #####
 @pytest.fixture
 def mock_parse_expiry(mocker, monkeypatch):
-    mock = mocker.MagicMock(oauth_client, autospec=True)
+    mock = mocker.MagicMock(oauth_client)
     mock._parse_expiry.return_value = datetime.datetime(2018, 1, 1, 12, 0, 0)
-    monkeypatch.setattr('gordon_janitor_gcp.auth._client', mock)
+    monkeypatch.setattr('gordon_janitor_gcp.clients.auth._client', mock)
     return mock
 
 
 @pytest.fixture
 def client(fake_keyfile, mock_service_acct, session, event_loop):
-    return auth.GoogleAuthClient(keyfile=fake_keyfile, session=session)
+    return auth.GAuthClient(keyfile=fake_keyfile, session=session)
 
 
 @pytest.mark.asyncio

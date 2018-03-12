@@ -18,10 +18,9 @@ import asyncio
 
 import pytest
 
-from gordon_janitor_gcp import auth
-from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp import gdns_client
-from gordon_janitor_gcp import gdns_reconciler as reconciler
+from gordon_janitor_gcp.clients import auth
+from gordon_janitor_gcp.clients import gdns
+from gordon_janitor_gcp.plugins import reconciler
 
 
 @pytest.fixture
@@ -41,11 +40,11 @@ def full_config(minimal_config):
 
 @pytest.fixture
 def dns_client(mocker, monkeypatch):
-    mock = mocker.Mock(gdns_client.AIOGoogleDNSClient, autospec=True)
+    mock = mocker.Mock(gdns.GDNSClient)
     mock._session = mocker.Mock()
     mock._session.close.return_value = True
     monkeypatch.setattr(
-        'gordon_janitor_gcp.gdns_client.AIOGoogleDNSClient', mock)
+        'gordon_janitor_gcp.plugins.reconciler.gdns.GDNSClient', mock)
     return mock
 
 
@@ -60,9 +59,9 @@ def config(fake_keyfile):
 
 @pytest.fixture
 def auth_client(mocker, monkeypatch):
-    mock = mocker.Mock(auth.GoogleAuthClient, autospec=True)
+    mock = mocker.Mock(auth.GAuthClient)
     monkeypatch.setattr(
-        'gordon_janitor_gcp.gdns_reconciler.auth.GoogleAuthClient', mock)
+        'gordon_janitor_gcp.plugins.reconciler.auth.GAuthClient', mock)
     return mock
 
 
@@ -74,43 +73,22 @@ params = [
 
 
 @pytest.mark.parametrize(args, params)
-def test_reconciler_default(timeout, exp_timeout, config, auth_client):
+def test_reconciler_default(timeout, exp_timeout, config, dns_client):
     rrset_chnl, changes_chnl = asyncio.Queue(), asyncio.Queue()
 
     if timeout:
         config['cleanup_timeout'] = timeout
 
-    recon_client = reconciler.GoogleDNSReconciler(
-        config, rrset_chnl, changes_chnl)
+    recon_client = reconciler.GDNSReconciler(
+        config, dns_client, rrset_chnl, changes_chnl)
     assert exp_timeout == recon_client.cleanup_timeout
     assert recon_client.dns_client is not None
-    assert config is recon_client.config
-
-
-args = 'config_key,exp_msg'
-params = [
-    ('keyfile', 'The path to a Service Account JSON keyfile is required '),
-    ('project', 'The GCP project where Cloud DNS is located is required.')
-]
-
-
-@pytest.mark.parametrize(args, params)
-def test_reconciler_default_raises(config_key, exp_msg, auth_client, config,
-                                   caplog):
-    config.pop(config_key)
-    rrset_chnl, changes_chnl = asyncio.Queue(), asyncio.Queue()
-
-    with pytest.raises(exceptions.GCPConfigError) as e:
-        reconciler.GoogleDNSReconciler(config, rrset_chnl, changes_chnl)
-
-    e.match(exp_msg)
-    assert 1 == len(caplog.records)
 
 
 @pytest.fixture
-async def recon_client(config, auth_client):
+async def recon_client(config, dns_client):
     rch, chch = asyncio.Queue(), asyncio.Queue()
-    recon_client = reconciler.GoogleDNSReconciler(config, rch, chch)
+    recon_client = reconciler.GDNSReconciler(config, dns_client, rch, chch)
     yield recon_client
     while not chch.empty():
         await chch.get()
@@ -142,7 +120,7 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
     coro1 = asyncio.ensure_future(publish_change_messages())
     coro2 = asyncio.ensure_future(validate_rrsets_by_zone())
 
-    mock_task = mocker.MagicMock(asyncio.Task, autospec=True)
+    mock_task = mocker.MagicMock(asyncio.Task)
     mock_task.all_tasks.side_effect = [
         # in the `while iterations` loop twice
         # timeout of `0` will never hit this loop
@@ -150,7 +128,7 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
         [coro1.done(), coro2.done()]
     ]
     monkeypatch.setattr(
-        'gordon_janitor_gcp.gdns_reconciler.asyncio.Task', mock_task)
+        'gordon_janitor_gcp.plugins.reconciler.asyncio.Task', mock_task)
 
     await recon_client.done()
 
@@ -171,7 +149,7 @@ async def test_publish_change_messages(recon_client, fake_response_data,
                                        caplog):
     """Publish message to changes queue."""
     rrsets = fake_response_data['rrsets']
-    desired_rrsets = [gdns_client.GCPResourceRecordSet(**kw) for kw in rrsets]
+    desired_rrsets = [gdns.GCPResourceRecordSet(**kw) for kw in rrsets]
 
     await recon_client.publish_change_messages(desired_rrsets)
 
@@ -193,7 +171,7 @@ async def test_validate_rrsets_by_zone(recon_client, fake_response_data, caplog,
         rrsets = fake_response_data['rrsets']
         rrsets[0]['rrdatas'] = ['10.4.5.6']
         return [
-            gdns_client.GCPResourceRecordSet(**kw) for kw in rrsets
+            gdns.GCPResourceRecordSet(**kw) for kw in rrsets
         ]
 
     monkeypatch.setattr(

@@ -15,15 +15,14 @@
 # limitations under the License.
 """
 Client module to publish any required DNS changes initiated from
-:py:class:`gordon_janitor_gcp.gdns_reconciler.GoogleDNSReconciler` to
-Google Cloud Pub/Sub. The consumer of these messages is the `Gordon
-service <https://github.com/spotify/gordon>`_.
+:class:`.GDNSReconciler` to `Google Cloud Pub/Sub <https://cloud.
+google.com/pubsub/docs/overview>`_. The consumer of these messages is
+the `Gordon service <https://github.com/spotify/gordon>`_.
 
 This client wraps around `google-cloud-pubsub <https://pypi.python.org
 /pypi/google-cloud-pubsub>`_ using `grpc <https://github.com/googleapis/
 googleapis/blob/master/google/pubsub/v1/pubsub.proto>`_ rather than
-inheriting from :py:class:`gordon_janitor_gcp.http_client.\
-AIOGoogleHTTPClient`.
+inheriting from :class:`.AIOConnection`.
 
 .. attention::
 
@@ -36,6 +35,7 @@ To use:
 .. code-block:: python
 
     import asyncio
+    import gordon_janitor_gcp
 
     config = {
         'keyfile': '/path/to/keyfile.json',
@@ -44,7 +44,8 @@ To use:
     }
     changes_channel = asyncio.Queue()
 
-    publisher = get_publisher(config, changes_channel)
+    publisher = gordon_janitor_gcp.get_publisher(
+        config, changes_channel)
 
     loop = asyncio.get_event_loop()
     try:
@@ -65,94 +66,93 @@ from google.api_core import exceptions as google_exceptions
 from google.cloud import pubsub
 from gordon_janitor import interfaces
 
-from gordon_janitor_gcp import auth
 from gordon_janitor_gcp import exceptions
+from gordon_janitor_gcp.clients import auth
 
 
-def _init_pubsub_client(auth_client, config):
-    # Silly emulator constraints
-    creds = getattr(auth_client, 'creds', None)
-    _client = pubsub.PublisherClient(credentials=creds)
-
-    topic = config['topic']
-    try:
-        _client.create_topic(topic)
-    except google_exceptions.AlreadyExists:
-        # already created
-        pass
-    except Exception as e:
-        msg = f'Error trying to create topic "{topic}": {e}'
-        logging.error(msg, exc_info=e)
-        raise exceptions.GCPGordonJanitorError(msg)
-
-    return _client
+__all__ = ('GPubsubPublisher',)
 
 
-def _init_pubsub_auth(config):
-    # a publisher client can't be made with credentials if a channel is
-    # already made/provided, which is what happens when the emulator is
-    # running ಠ_ಠ
-    # See (https://github.com/GoogleCloudPlatform/
-    #      google-cloud-python/pull/4839)
-    auth_client = None
-    if not os.environ.get('PUBSUB_EMULATOR_HOST'):
-        scopes = config.get('scopes')
-        # creating a dummy `session` as the pubsub.PublisherClient never
-        # uses it but without it aiohttp will complain about an unclosed
-        # client session that would otherwise be made by default
-        auth_client = auth.GoogleAuthClient(
-            keyfile=config['keyfile'], scopes=scopes, session='noop')
-    return auth_client
-
-
-def _validate_pubsub_config(config):
-    # req keys: keyfile, project, topic
-        # TODO (lynn): keyfile won't be required once we support other
-        #              auth methods
-    if not config.get('keyfile'):
-        msg = ('The path to a Service Account JSON keyfile is required to '
-               'authenticate for Google Cloud Pub/Sub.')
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
-    if not config.get('project'):
-        msg = 'The GCP project where Cloud Pub/Sub is located is required.'
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
-    if not config.get('topic'):
-        msg = ('A topic for the client to publish to in Cloud Pub/Sub is '
-               'required.')
-        logging.error(msg)
-        raise exceptions.GCPConfigError(msg)
-
-    topic_prefix = f'projects/{config["project"]}/topics/'
-    if not config.get('topic').startswith(topic_prefix):
-        config['topic'] = f'{topic_prefix}{config["topic"]}'
-
-
-def get_publisher(config, changes_channel, **kw):
-    """Get a GooglePubsubPublisher client.
-
-    A factory function that validates configuration, creates an auth
-    and pubsub API client, and returns a Google Pub/Sub Publisher
-    provider.
+class GPubsubPublisherBuilder:
+    """Build and configure a :class:`GPubsubPublisher` object.
 
     Args:
         config (dict): Google Cloud Pub/Sub-related configuration.
         changes_channel (asyncio.Queue): queue to publish message to
             make corrections to Cloud DNS.
-        kw (dict): Additional keyword arguments to pass to the
-            Publisher.
-    Returns:
-        A :py:class:`GooglePubsubPublisher` instance.
     """
-    _validate_pubsub_config(config)
-    auth_client = _init_pubsub_auth(config)
-    pubsub_client = _init_pubsub_client(auth_client, config)
-    return GooglePubsubPublisher(config, pubsub_client, changes_channel, **kw)
+    def __init__(self, config, changes_channel, **kwargs):
+        self.config = config
+        self.changes_channel = changes_channel
+        self.kwargs = kwargs
+
+    def _validate_config(self):
+        # req keys: keyfile, project, topic
+        # TODO (lynn): keyfile won't be required once we support other
+        #              auth methods
+        if not self.config.get('keyfile'):
+            msg = ('The path to a Service Account JSON keyfile is required to '
+                   'authenticate for Google Cloud Pub/Sub.')
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+        if not self.config.get('project'):
+            msg = 'The GCP project where Cloud Pub/Sub is located is required.'
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+        if not self.config.get('topic'):
+            msg = ('A topic for the client to publish to in Cloud Pub/Sub is '
+                   'required.')
+            logging.error(msg)
+            raise exceptions.GCPConfigError(msg)
+
+        topic_prefix = f'projects/{self.config["project"]}/topics/'
+        if not self.config.get('topic').startswith(topic_prefix):
+            self.config['topic'] = f'{topic_prefix}{self.config["topic"]}'
+
+    def _init_auth(self):
+        # a publisher client can't be made with credentials if a channel is
+        # already made/provided, which is what happens when the emulator is
+        # running ಠ_ಠ
+        # See (https://github.com/GoogleCloudPlatform/
+        #      google-cloud-python/pull/4839)
+        auth_client = None
+        if not os.environ.get('PUBSUB_EMULATOR_HOST'):
+            scopes = self.config.get('scopes')
+            # creating a dummy `session` as the pubsub.PublisherClient never
+            # uses it but without it aiohttp will complain about an unclosed
+            # client session that would otherwise be made by default
+            auth_client = auth.GAuthClient(
+                keyfile=self.config['keyfile'], scopes=scopes, session='noop')
+        return auth_client
+
+    def _init_client(self, auth_client):
+        # Silly emulator constraints
+        creds = getattr(auth_client, 'creds', None)
+        _client = pubsub.PublisherClient(credentials=creds)
+
+        topic = self.config['topic']
+        try:
+            _client.create_topic(topic)
+        except google_exceptions.AlreadyExists:
+            # already created
+            pass
+        except Exception as e:
+            msg = f'Error trying to create topic "{topic}": {e}'
+            logging.error(msg, exc_info=e)
+            raise exceptions.GCPGordonJanitorError(msg)
+
+        return _client
+
+    def build_publisher(self):
+        self._validate_config()
+        auth_client = self._init_auth()
+        pubsub_client = self._init_client(auth_client)
+        return GPubsubPublisher(
+            self.config, pubsub_client, self.changes_channel, **self.kwargs)
 
 
 @zope.interface.implementer(interfaces.IPublisher)
-class GooglePubsubPublisher:
+class GPubsubPublisher:
     """Client to publish change messages to Google Pub/Sub.
 
     Args:
@@ -209,7 +209,7 @@ class GooglePubsubPublisher:
 
         Args:
             message (dict): change message received from the
-                ``self.changes_channel`` to emit.
+                :obj:`changes_channel` to emit.
         """
         message['timestamp'] = datetime.datetime.utcnow().isoformat()
         bytes_message = bytes(json.dumps(message), encoding='utf-8')
@@ -221,7 +221,7 @@ class GooglePubsubPublisher:
         #              is released
 
     async def start(self):
-        """Start consuming from :py:obj:`self._changes_channel`.
+        """Start consuming from :obj:`changes_channel`.
 
         Once ``None`` is received from the channel, finish processing
         records and clean up any outstanding tasks.

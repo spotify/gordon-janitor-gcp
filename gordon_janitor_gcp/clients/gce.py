@@ -17,8 +17,8 @@
 Client classes to retrieve project and instance data from GCE.
 
 These clients use the asynchronous HTTP client defined in
-:py:mod:`gordon_janitor_gcp.http_client` and require service account or
-JWT-token credentials for authentication.
+:class:`.AIOConnection` and require service account or JWT-token
+credentials for authentication.
 
 To use:
 
@@ -27,16 +27,15 @@ To use:
     import asyncio
 
     import aiohttp
-
-    from gordon_janitor_gcp import auth
+    import gordon_janitor_gcp
 
     loop = asyncio.get_event_loop()
 
     async def main():
         session = aiohttp.ClientSession()
-        auth_client = auth.GoogleAuthClient(
+        auth_client = gordon_janitor_gcp.GAuthClient(
             keyfile='/path/to/keyfile', session=session)
-        client = GCEClient(auth_client, session)
+        client = gordon_janitor_gcp.GCEClient(auth_client, session)
         instances = await client.list_instances('project-id')
         print(instances)
 
@@ -48,83 +47,31 @@ To use:
 
 import logging
 
-from gordon_janitor_gcp import http_client
+from gordon_janitor_gcp.clients import http
 
 
-class GCRMClient(http_client.AIOGoogleHTTPClient,
-                 http_client.GPaginatorMixin):
-    """Async client to interact with Google Cloud Resource Manager API.
-
-    You can find the endpoint documentation
-    `here <https://cloud.google.com/resource-manager/
-    reference/rest/#rest-resource-v1projects>`__.
-
-    Attributes:
-        BASE_URL (str): Base endpoint URL.
-
-    Args:
-        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
-            to manage authentication for HTTP API requests.
-        session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
-            session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
-        api_version (str): version of API endpoint to send requests to.
-    """
-    BASE_URL = 'https://cloudresourcemanager.googleapis.com'
-
-    def __init__(self, auth_client=None, session=None, api_version='v1'):
-        super().__init__(auth_client=auth_client, session=session)
-        self.api_version = api_version
-
-    def _parse_rsps_for_projects(self, responses):
-        projects = []
-        for response in responses:
-            for project in response.get('projects', []):
-                projects.append(project)
-        return projects
-
-    async def list_all_active_projects(self, page_size=1000):
-        """Get all active projects.
-
-        You can find the endpoint documentation
-        `here <https://cloud.google.com/resource-manager/
-        reference/rest/v1/projects/list>`__.
-
-        Args:
-            page_size (int): hint for the client to only retrieve up to this
-                number of results per API call.
-        Returns:
-            list: list of dicts of all active projects.
-        """
-        url = f'{self.BASE_URL}/{self.api_version}/projects'
-        params = {'pageSize': page_size}
-
-        responses = await self.list_all(url, params)
-        projects = self._parse_rsps_for_projects(responses)
-        return [
-            project for project in projects
-            if project.get('lifecycleState', '').lower() == 'active'
-        ]
+__all__ = ('GCEClient',)
 
 
-class GCEClient(http_client.AIOGoogleHTTPClient,
-                http_client.GPaginatorMixin):
+class GCEClient(http.AIOConnection,
+                http.GPaginatorMixin):
     """Async client to interact with Google Cloud Compute API.
 
     Attributes:
         BASE_URL (str): base compute endpoint URL.
 
     Args:
-        auth_client (gordon_janitor_gcp.auth.GoogleAuthClient): client
-            to manage authentication for HTTP API requests.
+        auth_client (.GAuthClient): client to manage authentication for
+            HTTP API requests.
         session (aiohttp.ClientSession): (optional) ``aiohttp`` HTTP
             session to use for sending requests. Defaults to the
-            session object attached to ``auth_client`` if not provided.
+            session object attached to :obj:`auth_client` if not
+            provided.
         api_version (str): version of API endpoint to send requests to.
-        blacklisted_tags (list): Do not collect an instance if it has been
-            tagged with any of these.
-        blacklisted_metadata (list): Do not collect an instance if its metadata
-            key:val matches a {key:val} dict in this list.
+        blacklisted_tags (list): Do not collect an instance if it has
+            been tagged with any of these.
+        blacklisted_metadata (list): Do not collect an instance if its
+            metadata key:val matches a {key:val} dict in this list.
     """
     BASE_URL = 'https://www.googleapis.com/compute/'
 
@@ -145,19 +92,20 @@ class GCEClient(http_client.AIOGoogleHTTPClient,
                              instance_filter=None):
         """Fetch all instances in a GCE project.
 
-        You can find the endpoint documentation
-        `here <https://cloud.google.com/compute/docs/reference/latest/
-        instances/aggregatedList>`__.
+        You can find the endpoint documentation `here <https://cloud.
+        google.com/compute/docs/reference/latest/instances/
+        aggregatedList>`__.
 
         Args:
             project (str): unique, user-provided project ID.
-            page_size (int): hint for the client to only retrieve up to this
-                number of results per API call.
-            instance_filter (str): endpoint-specific filter string used to
-                retrieve a subset of instances. This is passed directly to the
-                endpoint's "filter" URL query parameter.
+            page_size (int): hint for the client to only retrieve up to
+                this number of results per API call.
+            instance_filter (str): endpoint-specific filter string used
+                to retrieve a subset of instances. This is passed
+                directly to the endpoint's "filter" URL query parameter.
         Returns:
-            list: dicts containing instance data.
+            list(dicts): data of all instances in the given
+                :obj:`project`
         """
         url = (f'{self.BASE_URL}{self.api_version}/projects/{project}'
                '/aggregated/instances')
