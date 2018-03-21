@@ -145,3 +145,28 @@ def test_get_reconciler_config_raises(key, error_msg, config, auth_client,
 
     e.match(error_msg)
     assert 1 == len(caplog.records)
+
+
+def test_get_authority(authority_config, auth_client):
+    """Test authority client initialization happy path."""
+    rrset_channel = asyncio.Queue()
+
+    client = plugins.get_authority(authority_config, rrset_channel)
+    assert rrset_channel == client.rrset_channel
+    assert client.crm_client is not None
+    assert client.gce_client is not None
+
+
+@pytest.mark.parametrize('config_key,error_msg', [
+    ('keyfile', 'The path to a Service Account JSON keyfile is required '),
+    ('zone', 'The ID of the target Cloud DNS managed zone is required ')])
+def test_get_authority_config_raises(caplog, config_key, error_msg,
+                                     authority_config, auth_client):
+    """Raise with bad configuration."""
+    rrset_channel = asyncio.Queue()
+    del authority_config[config_key]
+    with pytest.raises(exceptions.GCPConfigError) as e:
+        plugins.get_authority(authority_config, rrset_channel)
+
+    e.match(error_msg)
+    assert 1 == len(caplog.records)

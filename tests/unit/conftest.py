@@ -124,13 +124,15 @@ def auth_client(mocker, monkeypatch):
 
 
 @pytest.fixture
-def mock_coro(mocker):
-    mock = mocker.Mock()
+def create_mock_coro(mocker):
+    def _create_mock_coro():
+        mock = mocker.Mock()
 
-    async def _coro(*args, **kwargs):
-        return mock(*args, **kwargs)
+        async def _coro(*args, **kwargs):
+            return mock(*args, **kwargs)
 
-    return mock, _coro
+        return mock, _coro
+    return _create_mock_coro
 
 
 async def _noop():
@@ -139,10 +141,8 @@ async def _noop():
 
 @pytest.fixture
 def get_gce_client(mocker, auth_client):
-    client = None
 
     def _create_client(klass, *args, **kwargs):
-        nonlocal client
         client = klass(auth_client, *args, **kwargs)
         mocker.patch.object(client, 'set_valid_token', _noop)
         return client
@@ -155,3 +155,15 @@ def publisher_client(mocker, monkeypatch):
     patch = 'gordon_janitor_gcp.plugins.publisher.pubsub.PublisherClient'
     monkeypatch.setattr(patch, mock)
     return mock
+
+
+@pytest.fixture
+def authority_config():
+    return {
+        'keyfile': 'keyfile',
+        'scopes': ['scope'],
+        'metadata_blacklist': [['key', 'val'], ['other_key', 'other_val']],
+        'project_blacklist': [],
+        'tag_blacklist': [],
+        'zone': 'zone1',
+    }

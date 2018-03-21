@@ -15,8 +15,10 @@
 # limitations under the License.
 
 # Mainly for easier documentation reading
+from gordon_janitor_gcp.plugins import authority
 from gordon_janitor_gcp.plugins import publisher
 from gordon_janitor_gcp.plugins import reconciler
+from gordon_janitor_gcp.plugins.authority import GCEAuthority  # noqa: F401
 from gordon_janitor_gcp.plugins.publisher import GPubsubPublisher  # noqa: F401
 from gordon_janitor_gcp.plugins.reconciler import GDNSReconciler  # noqa: F401
 
@@ -24,7 +26,8 @@ from gordon_janitor_gcp.plugins.reconciler import GDNSReconciler  # noqa: F401
 __all__ = (
     reconciler.__all__ +  # noqa: F405
     ('get_publisher', 'GPubsubPublisher') +
-    ('get_reconciler', 'GDNSReconciler')
+    ('get_reconciler', 'GDNSReconciler') +
+    ('get_authority', 'GCEAuthority')
 )
 
 
@@ -69,3 +72,22 @@ def get_reconciler(config, rrset_channel, changes_channel, **kw):
     builder = reconciler.GDNSReconcilerBuilder(
         config, rrset_channel, changes_channel, **kw)
     return builder.build_reconciler()
+
+
+def get_authority(config, rrset_channel, **kwargs):
+    """Get a GCEAuthority client.
+
+    A factory function that validates configuration and creates a
+    proper GCEAuthority.
+
+    Args:
+        config (dict): GCEAuthority related configuration.
+        rrset_channel (asyncio.Queue): queue used for sending messages
+            to the reconciler plugin.
+        kw (dict): Additional keyword arguments to pass to the
+            Authority.
+    Returns:
+        A :class:`GCEAuthority` instance.
+    """
+    builder = authority.GCEAuthorityBuilder(config, rrset_channel, **kwargs)
+    return builder.build_authority()

@@ -14,3 +14,13 @@ scopes = ["ndev.clouddns.readonly"]
 keyfile = "/path/to/pubsub-service-account.json"
 project = "gordon-pubsub-example"
 topic = "dns-changes-topic"
+
+[gcp.gce]
+keyfile = "/path/to/crm-service-account.json"
+scopes = ["cloud-platform"]
+zone = "example.com"
+metadata_blacklist = [["key", "val"], ["other_key", "other_val"]]
+tag_blacklist = []
+project_blacklist = []
+# This is passed directly to GCE's v1.instances.aggregatedList endpoint
+instance_filter = ""

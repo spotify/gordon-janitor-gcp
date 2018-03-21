@@ -39,7 +39,7 @@ Any configuration key/value listed here may also be used in the specific plugin 
 
     To learn more about GCP projects, please see `Google's docs on creating & managing projects <https://cloud.google.com/resource-manager/docs/creating-managing-projects>`_.
 
-.. option:: scopes=["STR", "STR"]
+.. option:: scopes=["STR","STR"]
 
     `Optional`: A list of strings of the scope(s) needed when making calls to Google APIs. Defaults to ``["cloud-platform"]``.
 
@@ -66,5 +66,32 @@ All configuration options above in the general ``[gcp]`` may be used here. Addit
 
     For the Pub/Sub plugin, ``keyfile`` is not required when running against the `Pub/Sub Emulator <https://cloud.google.com/pubsub/docs/emulator>`_ that Google provides.
 
+
+gcp.gce
+~~~~~~~
+
+All configuration options from the general ``[gcp]`` section may be used here.
+
+Additional plugin-specific configuration is needed:
+
+.. option:: zone="STR"
+
+    `Required`: ID of a Cloud DNS managed zone that instance resource records should belong to.
+
+.. option:: metadata_blackklist=[["STR","STR"],["STR","STR"]]
+
+    `Optional`: List of key-value pairs that will be used to filter out unwanted GCE instances by `instance metadata <https://cloud.google.com/compute/docs/storing-retrieving-metadata>`_. Note that both the key and the value must match for an instance to be filtered out.
+
+.. option:: tag_blacklist=["STR","STR"]
+
+    `Optional`: List of `network tags <https://cloud.google.com/vpc/docs/add-remove-network-tags>`_  that will be used to filter out unwanted GCE instances.
+
+.. option:: project_blacklist=["STR","STR"]
+
+    `Optional`: List of unique, user-assigned project IDs (``projectId``) that will be ignored when fetching projects.
+
+.. option:: instance_filter="STR"
+
+    `Optional`: String used to filter instances by instance attributes. It is passed directly to GCE's `v1.instances.aggregatedList <https://cloud.google.com/compute/docs/reference/rest/v1/instances/aggregatedList>`_ endpoint's `filter` parameter.
 
 .. _`gordon-janitor`: https://github.com/spotify/gordon-janitor

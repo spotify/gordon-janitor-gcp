@@ -26,5 +26,11 @@ Publisher
 .. autoclass:: gordon_janitor_gcp.GPubsubPublisher
     :members:
 
+Authority
+---------
+
+.. automodule:: gordon_janitor_gcp.plugins.authority
+.. autoclass:: gordon_janitor_gcp.GCEAuthority
+    :members:
 
 .. _`gordon-janitor`: https://github.com/spotify/gordon-janitor
