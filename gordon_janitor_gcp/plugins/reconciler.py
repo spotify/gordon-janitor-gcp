@@ -191,7 +191,7 @@ class GDNSReconciler:
 
         await self.changes_channel.put(None)
         # TODO (lynn): add metrics.flush call here once aioshumway is released
-        self.dns_client._session.close()
+        await self.dns_client._session.close()
 
         msg = ('Reconciliation of desired records against actual records in '
                'Google DNS is complete.')

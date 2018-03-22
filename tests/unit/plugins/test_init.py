@@ -147,7 +147,8 @@ def test_get_reconciler_config_raises(key, error_msg, config, auth_client,
     assert 1 == len(caplog.records)
 
 
-def test_get_authority(authority_config, auth_client):
+@pytest.mark.asyncio
+async def test_get_authority(authority_config, auth_client):
     """Test authority client initialization happy path."""
     rrset_channel = asyncio.Queue()
 
@@ -155,6 +156,10 @@ def test_get_authority(authority_config, auth_client):
     assert rrset_channel == client.rrset_channel
     assert client.crm_client is not None
     assert client.gce_client is not None
+
+    # cleaning up; only need to close one client's session since they
+    # are the same object
+    await client.crm_client._session.close()
 
 
 @pytest.mark.parametrize('config_key,error_msg', [

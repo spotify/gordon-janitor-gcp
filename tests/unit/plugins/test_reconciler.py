@@ -16,6 +16,7 @@
 
 import asyncio
 
+import aiohttp
 import pytest
 
 from gordon_janitor_gcp.clients import auth
@@ -39,13 +40,13 @@ def full_config(minimal_config):
 
 
 @pytest.fixture
-def dns_client(mocker, monkeypatch):
+async def dns_client(mocker, monkeypatch):
     mock = mocker.Mock(gdns.GDNSClient)
-    mock._session = mocker.Mock()
-    mock._session.close.return_value = True
+    mock._session = aiohttp.ClientSession()
     monkeypatch.setattr(
         'gordon_janitor_gcp.plugins.reconciler.gdns.GDNSClient', mock)
-    return mock
+    yield mock
+    await mock._session.close()
 
 
 @pytest.fixture
