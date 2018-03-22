@@ -92,8 +92,8 @@ async def test_builder_creates_proper_authority(mocker, authority_config):
 
 
 @pytest.mark.asyncio
-async def test_start_publishes_msg_to_channel(mocker, authority_config,
-                                              get_gce_client, create_mock_coro):
+async def test_run_publishes_msg_to_channel(mocker, authority_config,
+                                            get_gce_client, create_mock_coro):
     instance_data = []
     for i in range(1, 4):
         instance_data.append({
@@ -115,7 +115,7 @@ async def test_start_publishes_msg_to_channel(mocker, authority_config,
     gce_authority = authority.GCEAuthority(authority_config, crm_client,
                                            gce_client, rrset_channel)
 
-    await gce_authority.start()
+    await gce_authority.run()
 
     _expected_rrsets = []
     for instance in instance_data:
@@ -131,5 +131,5 @@ async def test_start_publishes_msg_to_channel(mocker, authority_config,
 
     # one message includes data for all projects
     assert expected_msg == (await rrset_channel.get())
-    # start also calls self.done at the end
+    # run also calls self.cleanup at the end
     assert (await rrset_channel.get()) is None
