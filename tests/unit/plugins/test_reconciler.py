@@ -16,6 +16,7 @@
 
 import asyncio
 
+import aiohttp
 import pytest
 
 from gordon_janitor_gcp.clients import auth
@@ -39,13 +40,13 @@ def full_config(minimal_config):
 
 
 @pytest.fixture
-def dns_client(mocker, monkeypatch):
+async def dns_client(mocker, monkeypatch):
     mock = mocker.Mock(gdns.GDNSClient)
-    mock._session = mocker.Mock()
-    mock._session.close.return_value = True
+    mock._session = aiohttp.ClientSession()
     monkeypatch.setattr(
         'gordon_janitor_gcp.plugins.reconciler.gdns.GDNSClient', mock)
-    return mock
+    yield mock
+    await mock._session.close()
 
 
 @pytest.fixture
@@ -105,8 +106,8 @@ params = [
 
 @pytest.mark.parametrize(args, params)
 @pytest.mark.asyncio
-async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
-                    monkeypatch):
+async def test_cleanup(exp_log_records, timeout, recon_client, caplog, mocker,
+                       monkeypatch):
     """Proper cleanup with or without pending tasks."""
     recon_client.cleanup_timeout = timeout
 
@@ -130,7 +131,7 @@ async def test_done(exp_log_records, timeout, recon_client, caplog, mocker,
     monkeypatch.setattr(
         'gordon_janitor_gcp.plugins.reconciler.asyncio.Task', mock_task)
 
-    await recon_client.done()
+    await recon_client.cleanup()
 
     assert exp_log_records == len(caplog.records)
     if exp_log_records == 2:
@@ -199,8 +200,8 @@ params = [
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(args, params)
-async def test_start(msg, exp_log_records, exp_mock_calls, caplog, recon_client,
-                     monkeypatch):
+async def test_run(msg, exp_log_records, exp_mock_calls, caplog, recon_client,
+                   monkeypatch):
     """Start reconciler & continue if certain errors are raised."""
     mock_validate_rrsets_by_zone_called = 0
 
@@ -215,7 +216,7 @@ async def test_start(msg, exp_log_records, exp_mock_calls, caplog, recon_client,
     await recon_client.rrset_channel.put(msg)
     await recon_client.rrset_channel.put(None)
 
-    await recon_client.start()
+    await recon_client.run()
 
     assert exp_log_records == len(caplog.records)
     assert exp_mock_calls == mock_validate_rrsets_by_zone_called

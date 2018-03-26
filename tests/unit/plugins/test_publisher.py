@@ -44,9 +44,9 @@ def kwargs(config, publisher_client):
     [1, 1, (False, False, True)],
 ])
 @pytest.mark.asyncio
-async def test_done(exp_log_records, timeout, side_effect, kwargs,
-                    publisher_client, auth_client, caplog, mocker,
-                    monkeypatch):
+async def test_cleanup(exp_log_records, timeout, side_effect, kwargs,
+                       publisher_client, auth_client, caplog, mocker,
+                       monkeypatch):
     """Proper cleanup with or without pending tasks."""
     caplog.set_level(logging.DEBUG)
 
@@ -62,7 +62,7 @@ async def test_done(exp_log_records, timeout, side_effect, kwargs,
     client._messages.add(mock_msg1)
     client._messages.add(mock_msg2)
 
-    await client.done()
+    await client.cleanup()
 
     assert exp_log_records == len(caplog.records)
     if exp_log_records == 2:
@@ -101,8 +101,8 @@ async def test_publish(kwargs, publisher_client, auth_client, mocker,
     [Exception('foo'), 2],
 ])
 @pytest.mark.asyncio
-async def test_start(raises, exp_log_records, kwargs, publisher_client,
-                     auth_client, mocker, monkeypatch, caplog):
+async def test_run(raises, exp_log_records, kwargs, publisher_client,
+                   auth_client, mocker, monkeypatch, caplog):
     """Start consuming the changes channel queue."""
     caplog.set_level(logging.DEBUG)
 
@@ -114,7 +114,7 @@ async def test_start(raises, exp_log_records, kwargs, publisher_client,
     await kwargs['changes_channel'].put(None)
 
     client = publisher.GPubsubPublisher(**kwargs)
-    await client.start()
+    await client.run()
 
     publisher_client.publish.assert_called_once()
     assert exp_log_records == len(caplog.records)

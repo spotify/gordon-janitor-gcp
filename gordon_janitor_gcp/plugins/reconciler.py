@@ -154,7 +154,7 @@ class GDNSReconciler:
         self.cleanup_timeout = config.get('cleanup_timeout', 60)
         self.dns_client = dns_client
 
-    async def done(self):
+    async def cleanup(self):
         """Clean up & notify :obj:`changes_channel` of no more messages.
 
         This method collects all tasks that this particular class
@@ -191,7 +191,7 @@ class GDNSReconciler:
 
         await self.changes_channel.put(None)
         # TODO (lynn): add metrics.flush call here once aioshumway is released
-        self.dns_client._session.close()
+        await self.dns_client._session.close()
 
         msg = ('Reconciliation of desired records against actual records in '
                'Google DNS is complete.')
@@ -272,7 +272,7 @@ class GDNSReconciler:
         # TODO: (FEATURE): have separate metrics for additions and deletions
         await self.publish_change_messages(missing_rrsets, action='additions')
 
-    async def start(self):
+    async def run(self):
         """Start consuming from :obj:`rrset_channel`.
 
         Once ``None`` is received from the channel, finish processing
@@ -291,4 +291,4 @@ class GDNSReconciler:
                 msg = f'Dropping message {desired_rrset}: {e}'
                 logging.error(msg, exc_info=e)
 
-        await self.done()
+        await self.cleanup()

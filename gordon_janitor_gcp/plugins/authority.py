@@ -159,7 +159,7 @@ class GCEAuthority:
             ]
         }
 
-    async def start(self):
+    async def run(self):
         """Batch instance data and send it to the :obj:`self.rrset_channel`.
         """
         projects = await self._get_projects()
@@ -172,9 +172,9 @@ class GCEAuthority:
         await self.rrset_channel.put(rrset_msg)
         # TODO: emit a metric of domain records created per zone and project.
 
-        await self.done()
+        await self.cleanup()
 
-    async def done(self):
+    async def cleanup(self):
         """Clean up after a run."""
         msg = 'Finished sending record messages to the reconciler.'
         logging.info(msg)

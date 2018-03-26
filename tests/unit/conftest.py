@@ -111,7 +111,7 @@ def config(fake_keyfile):
 
 
 @pytest.fixture
-def auth_client(mocker, monkeypatch):
+async def auth_client(mocker, monkeypatch):
     mock = mocker.Mock(auth.GAuthClient, autospec=True)
     mock.token = '0ldc0ffe3'
     mock._session = aiohttp.ClientSession()
@@ -120,7 +120,7 @@ def auth_client(mocker, monkeypatch):
     monkeypatch.setattr(
         'gordon_janitor_gcp.plugins.publisher.auth.GAuthClient', mock)
     yield mock
-    mock._session.close()
+    await mock._session.close()
 
 
 @pytest.fixture

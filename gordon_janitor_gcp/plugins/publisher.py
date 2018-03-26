@@ -170,7 +170,7 @@ class GPubsubPublisher:
         self.cleanup_timeout = config.get('cleanup_timeout', 60)
         self._messages = set()
 
-    async def done(self):
+    async def cleanup(self):
         """Clean up outstanding tasks and emit final logs + metrics.
 
         This method collects all tasks that this particular class
@@ -220,7 +220,7 @@ class GPubsubPublisher:
         # TODO (lynn): add metrics.incr/emit call here once aioshumway
         #              is released
 
-    async def start(self):
+    async def run(self):
         """Start consuming from :obj:`changes_channel`.
 
         Once ``None`` is received from the channel, finish processing
@@ -237,4 +237,4 @@ class GPubsubPublisher:
             except Exception as e:  # todo
                 logging.error(f'foo: {e}')
 
-        await self.done()
+        await self.cleanup()
