@@ -150,14 +150,14 @@ class GCEAuthority:
             'rrdatas': [instance['external_ip']]
         }
 
-    def _create_msg(self, instances):
-        return {
+    def _create_msgs(self, instances):
+        return [{
             'zone': self.config['zone'],
             'rrsets': [
                 self._create_instance_rrset(instance_data)
                 for instance_data in instances
             ]
-        }
+        }]
 
     async def run(self):
         """Batch instance data and send it to the :obj:`self.rrset_channel`.
@@ -168,8 +168,8 @@ class GCEAuthority:
         async for project_instances in self._get_instances(projects):
             instances.extend(project_instances)
 
-        rrset_msg = self._create_msg(instances)
-        await self.rrset_channel.put(rrset_msg)
+        for rrset_msg in self._create_msgs(instances):
+            await self.rrset_channel.put(rrset_msg)
         # TODO: emit a metric of domain records created per zone and project.
 
         await self.cleanup()
