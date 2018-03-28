@@ -47,14 +47,15 @@ To use:
 
 import logging
 
-from gordon_janitor_gcp.clients import http
+from gordon_gcp.clients import http
+
+from gordon_janitor_gcp.clients import _utils
 
 
 __all__ = ('GCEClient',)
 
 
-class GCEClient(http.AIOConnection,
-                http.GPaginatorMixin):
+class GCEClient(http.AIOConnection, _utils.GPaginatorMixin):
     """Async client to interact with Google Cloud Compute API.
 
     Attributes:

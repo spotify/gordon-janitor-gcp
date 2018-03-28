@@ -44,10 +44,10 @@ import logging
 
 import aiohttp
 import zope.interface
+from gordon_gcp.clients import auth
 from gordon_janitor import interfaces
 
 from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp.clients import auth
 from gordon_janitor_gcp.clients import gce
 from gordon_janitor_gcp.clients import gcrm
 

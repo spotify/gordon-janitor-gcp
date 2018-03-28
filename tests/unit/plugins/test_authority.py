@@ -57,7 +57,7 @@ async def test_builder_creates_proper_authority(mocker, authority_config):
     authority_mod_patch = 'gordon_janitor_gcp.clients.'
     mocker.patch(authority_mod_patch + 'gcrm.GCRMClient', crm_client)
     mocker.patch(authority_mod_patch + 'gce.GCEClient', gce_client)
-    mocker.patch(authority_mod_patch + 'auth.GAuthClient', auth_client)
+    mocker.patch('gordon_gcp.clients.auth.GAuthClient', auth_client)
 
     rrset_channel = asyncio.Queue()
     kwargs = {'other': 'kwargs'}
