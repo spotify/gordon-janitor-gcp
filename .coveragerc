@@ -5,9 +5,8 @@ source =
 
 [paths]
 source =
-   gordon_janitor_gcp
+   src/gordon_janitor_gcp
    .tox/*/lib/python*/site-packages/gordon_janitor_gcp
-   .tox/pypy/site-packages/gordon_janitor_gcp
 
 [report]
 show_missing = True

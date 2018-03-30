@@ -80,7 +80,7 @@ author = 'Matt Obarzanek, Lynn Root, Amy Skinner, Steven Stone, James Wen'
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = find_version('../gordon_janitor_gcp/__init__.py')
+release = find_version('../src/gordon_janitor_gcp/__init__.py')
 # The short X.Y version.
 version = release.rsplit(u'.', 1)[0]
 
@@ -103,6 +103,11 @@ pygments_style = 'sphinx'
 todo_include_todos = True
 
 
+# Autodoc extention configuration
+autodoc_member_order = 'bysource'  # not sure why this doesn't work?
+
+# Avoid having to write `:py:` everywhere
+primary_domain = 'py'
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -167,4 +172,8 @@ man_pages = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 # TODO (econchick@): Once gordon core docs are live, add here
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {
+    'https://docs.python.org/3': None,
+    'https://googlecloudplatform.github.io/google-cloud-python/latest/': None,
+    'https://aiohttp.readthedocs.io/en/stable/': None,
+}

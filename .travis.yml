@@ -22,7 +22,9 @@ deploy:
   provider: pypi
   user: spotify_alf
   password:
-    secure: TODO
+    secure: faevl3l+6/a/uz0NR9hDSOTDlVNP0r9PZYHRi3L9sCJcbXLyWXXwzBUBVdphi/kPcRmCzkw70mnuqRrHX/5MSf8JLj0yRMNkd+7Sun0o72z+1vafDQZKnhO28sSGASG+jw3EN8Nv/gJ72rb9GTujMkglL81LcC9Cvlvwfbyz4QzhvkgLuXfYzX43Zctz/BVK0Y7T74ARa6LFbqG0yfYX2aaf3e/hOT6v2Ej1cEwut5VrC4qIV8JypLjjcWpRaIDf597pt0DXyeC6N3PkNZHrOPVbHHq67C2H69dHXdG5fBihYEf2AAWHztIjOU37SWHTrizvJYoPpNvE6qU6AxUZZ/jfBK4uMQPD9KsBolDPhsYaiRyjTQHgJJfZ1BKMV0P9Ct+1mh6w8SZ6rE7Unkkyh5TyJTnLeM519Wq4U+1iLqgeI1pkwbbgklSsIzKLhIMi9oNrdTMhc9Wid6wtmrf5NhMTqE6QDlx/0rIRDULLwVZeBj4CX79HsTZMOApT8Elt/DYepmKzFXbmdbWfZ1JH5YTiCXAvmCOMJGFTPe1UFn9RHyi74TjrXtDQh6+TIDmJSNvr/jU+kxBr6d4BAed0FhyO9VsWhD1tgiOkfeBPAdXkxfjhLLYiHgRIVxIS8aQWEzlYdNI6Z/5piqqI75IdoN+nVdAjrVjFXfv+a/aAS50=
   on:
     tags: true
+    branch: master
+    condition: $TOXENV = py36
   distributions: sdist bdist_wheel

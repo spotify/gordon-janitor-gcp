@@ -18,6 +18,18 @@ Release v\ |release| (:doc:`What's new? <changelog>`).
    :start-after: intro-begin
 
 
+User's Guide
+============
+
+.. toctree::
+   :maxdepth: 1
+
+   plugins
+   clients
+   config
+   exceptions
+
+
 Project Information
 ===================
 
