@@ -165,5 +165,5 @@ def authority_config():
         'metadata_blacklist': [['key', 'val'], ['other_key', 'other_val']],
         'project_blacklist': [],
         'tag_blacklist': [],
-        'zone': 'zone1',
+        'dns_zone': 'zone1.com',
     }

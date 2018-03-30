@@ -125,7 +125,7 @@ async def test_run_publishes_msg_to_channel(mocker, authority_config,
             'rrdatas': [instance['external_ip']]})
     expected_rrsets = _expected_rrsets * 2
     expected_msg = {
-        'zone': authority_config['zone'],
+        'zone': authority_config['dns_zone'],
         'rrsets': expected_rrsets
     }
 

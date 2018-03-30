@@ -89,9 +89,9 @@ class GCEAuthorityBuilder:
                    'Resource Manager.')
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
-        if not self.config.get('zone'):
-            msg = ('The ID of the target Cloud DNS managed zone is required to '
-                   'identify which zone records should belong to.')
+        if not self.config.get('dns_zone'):
+            msg = ('The DNS zone name, i.e. "example.com", is required to '
+                   'identify to which zone generated records should belong.')
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
 
@@ -152,7 +152,7 @@ class GCEAuthority:
 
     def _create_msgs(self, instances):
         return [{
-            'zone': self.config['zone'],
+            'zone': self.config['dns_zone'],
             'rrsets': [
                 self._create_instance_rrset(instance_data)
                 for instance_data in instances
