@@ -64,8 +64,8 @@ def install_requires():
 #####
 NAME = 'gordon-janitor-gcp'
 PACKAGE_NAME = 'gordon_janitor_gcp'
-PACKAGES = find_packages(where='.')
-META_PATH = os.path.join(PACKAGE_NAME, '__init__.py')
+PACKAGES = find_packages(where='src')
+META_PATH = os.path.join('src', PACKAGE_NAME, '__init__.py')
 KEYWORDS = ['dns']
 CLASSIFIERS = [
     'Development Status :: 1 - Planning',
@@ -93,6 +93,7 @@ setup(
     maintainer=find_meta('author'),
     maintainer_email=find_meta('email'),
     packages=PACKAGES,
+    package_dir={'': 'src'},
     entry_points={
         'gordon_janitor.plugins': [
             'gcp.gce = gordon_janitor:get_authority',
