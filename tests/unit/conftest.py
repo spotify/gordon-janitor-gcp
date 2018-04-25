@@ -167,3 +167,39 @@ def authority_config():
         'tag_blacklist': [],
         'dns_zone': 'zone1.com',
     }
+
+
+@pytest.fixture
+def instance_data():
+    return {
+        'id': '1',
+        'creationTimestamp': '2018-01-01 00:00:00.0000',
+        'name': 'instance-1',
+        'description': 'guc3-instance-1-54kj',
+        'tags': {
+            'items': ['some-tag'],
+            'fingerprint': ''
+        },
+        'machineType': 'n1-standard-1',
+        'status': 'RUNNING',
+        'statusMessage': 'RUNNING',
+        'zone': 'us-west9-z',
+        'canIpForward': False,
+        'networkInterfaces': [{
+            'network': 'network/url/string',
+            'subnetwork': 'subnetwork/url/string',
+            'networkIP': '192.168.0.1',
+            'name': 'test-network',
+            'accessConfigs': [{
+                'type': 'ONE_TO_ONE_NAT',
+                'name': 'EXTERNAL NAT',
+                'natIP': '1.1.1.1',
+                'kind': 'compute#accessConfig'
+            }],
+        }],
+        'metadata': {
+            'items': [
+                {'key': 'default', 'value': 'true'}
+            ],
+        },
+    }
