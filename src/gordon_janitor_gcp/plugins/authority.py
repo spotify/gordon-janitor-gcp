@@ -89,9 +89,9 @@ class GCEAuthorityBuilder:
                    'Resource Manager.')
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
-        if not self.config.get('zone'):
-            msg = ('The ID of the target Cloud DNS managed zone is required to '
-                   'identify which zone records should belong to.')
+        if not self.config.get('dns_zone'):
+            msg = ('The DNS zone name, i.e. "example.com", is required to '
+                   'identify to which zone generated records should belong.')
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
 
@@ -144,20 +144,30 @@ class GCEAuthority:
                 project, instance_filter=instance_filter)
 
     def _create_instance_rrset(self, instance):
+        ip = instance['networkInterfaces'][0]['accessConfigs'][0]['natIP']
         return {
-            'name': instance['hostname'],
+            'name': instance['name'],
             'type': 'A',
-            'rrdatas': [instance['external_ip']]
+            'rrdatas': [ip]
         }
 
     def _create_msgs(self, instances):
-        return [{
-            'zone': self.config['zone'],
-            'rrsets': [
-                self._create_instance_rrset(instance_data)
-                for instance_data in instances
-            ]
-        }]
+        msgs = []
+        rrsets = []
+        for instance in instances:
+            try:
+                rrsets.append(self._create_instance_rrset(instance))
+            except (KeyError, IndexError) as e:
+                logging.warn(
+                    'Could not extract instance information for '
+                    f'{instance} because of missing key {e}, skipping.')
+        if rrsets:
+            msgs.append({
+                'zone': self.config['dns_zone'],
+                'rrsets': rrsets
+            })
+
+        return msgs
 
     async def run(self):
         """Batch instance data and send it to the :obj:`self.rrset_channel`.

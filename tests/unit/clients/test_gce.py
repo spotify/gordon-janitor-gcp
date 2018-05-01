@@ -32,45 +32,14 @@ class TestGCEClient:
         return fake_url
 
     @pytest.fixture
-    def compute_rsp(self):
+    def compute_rsp(self, instance_data):
         return {
             'kind': 'compute#instanceAggregatedList',
             'id': 'd34dbeef',
             # Simplified Instance resource
             'items': {
                 'us-west1-z': {
-                    'instances': [{
-                        'id': '1',
-                        'creationTimestamp': '2018-01-01 00:00:00.0000',
-                        'name': 'instance-1',
-                        'description': 'guc3-instance-1-54kj',
-                        'tags': {
-                            'items': ['some-tag'],
-                            'fingerprint': ''
-                        },
-                        'machineType': 'n1-standard-1',
-                        'status': 'RUNNING',
-                        'statusMessage': 'RUNNING',
-                        'zone': 'us-west9-z',
-                        'canIpForward': False,
-                        'networkInterfaces': [{
-                            'network': 'network/url/string',
-                            'subnetwork': 'subnetwork/url/string',
-                            'networkIP': '192.168.0.1',
-                            'name': 'test-network',
-                            'accessConfigs': [{
-                                'type': 'ONE_TO_ONE_NAT',
-                                'name': 'EXTERNAL NAT',
-                                'natIP': '1.1.1.1',
-                                'kind': 'compute#accessConfig'
-                            }],
-                        }],
-                        'metadata': {
-                            'items': [
-                                {'key': 'default', 'value': 'true'}
-                            ],
-                        },
-                    }],
+                    'instances': [instance_data],
                     'warning': {
                         'warning': 'object'
                     }
@@ -89,14 +58,13 @@ class TestGCEClient:
     @pytest.mark.asyncio
     async def test_list_instances(
             self, compute_rsp, patch_compute_base_url, get_gce_client, caplog,
-            query_str, instance_meta, log_call_count):
+            instance_data, query_str, instance_meta, log_call_count):
         """Client uses multiple filters to process results."""
         caplog.set_level(logging.DEBUG)
         gce_client = get_gce_client(gce.GCEClient)
 
         if instance_meta:
-            instance_dict = compute_rsp['items']['us-west1-z']['instances'][0]
-            blacklisted_instance = copy.deepcopy(instance_dict)
+            blacklisted_instance = copy.deepcopy(instance_data)
             blacklisted_instance['name'] = 'instance-2'
             compute_rsp['items']['us-west1-z']['instances'].append(
                 blacklisted_instance)
@@ -125,31 +93,9 @@ class TestGCEClient:
                 page_size=10,
                 **kwargs)
 
-        expected_results = [{
-            'hostname': 'instance-1',
-            'internal_ip': '192.168.0.1',
-            'external_ip': '1.1.1.1'
-        }]
+        expected_results = [instance_data]
         assert expected_results == results
         assert log_call_count == len(caplog.records)
-
-    @pytest.mark.asyncio
-    async def test_list_instances_bad_json(
-            self, compute_rsp, patch_compute_base_url, get_gce_client, caplog):
-        """Client ignores incomplete API replies."""
-        gce_client = get_gce_client(gce.GCEClient)
-        caplog.set_level(logging.DEBUG)
-        del compute_rsp['items']['us-west1-z']['instances'][0]['name']
-        with aioresponses() as m:
-            filter_url = (f'{patch_compute_base_url}v1/projects/test-project/'
-                          'aggregated/instances?maxResults=10')
-            m.get(filter_url, payload=compute_rsp)
-
-            results = await gce_client.list_instances(
-                'test-project', page_size=10)
-
-        assert [] == results
-        assert 3 == len(caplog.records)
 
     @pytest.mark.asyncio
     async def test_list_instances_retrieves_multiple_pages(
@@ -169,14 +115,8 @@ class TestGCEClient:
             results = await gce_client.list_instances(
                 'test-project', page_size=5)
 
-        expected_results = [{
-            'hostname': 'instance-1',
-            'internal_ip': '192.168.0.1',
-            'external_ip': '1.1.1.1'
-        }]
-        expected_results.append(expected_results[0].copy())
-        expected_results[1]['hostname'] = 'instance-2'
-
+        expected_results = compute_rsp['items']['us-west1-z']['instances'] \
+            + page2['items']['us-west1-z']['instances']
         assert expected_results == results
         requests = list(m.requests.keys())
         assert 2 == len(requests)

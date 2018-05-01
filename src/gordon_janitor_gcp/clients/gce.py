@@ -132,21 +132,8 @@ class GCEClient(http.AIOConnection, _utils.GPaginatorMixin):
                 self._blacklisted_by_tag(instance),
                 self._blacklisted_by_metadata(instance)
             ]):
-                try:
-                    instances.append(self._extract_instance_data(instance))
-                except (KeyError, IndexError) as e:
-                    logging.debug(
-                        'Could not extract instance information for '
-                        f'{instance} because of missing key {e}, skipping.')
+                instances.append(instance)
         return instances
-
-    def _extract_instance_data(self, instance):
-        iface_data = instance['networkInterfaces'][0]
-        return {
-            'hostname': instance['name'],
-            'internal_ip': iface_data['networkIP'],
-            'external_ip': iface_data['accessConfigs'][0]['natIP'],
-        }
 
     def _blacklisted_by_tag(self, instance):
         instance_tags = instance.get('tags', {}).get('items', [])
