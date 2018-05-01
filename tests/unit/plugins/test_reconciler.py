@@ -18,8 +18,8 @@ import asyncio
 
 import aiohttp
 import pytest
+from gordon_gcp.clients import auth
 
-from gordon_janitor_gcp.clients import auth
 from gordon_janitor_gcp.clients import gdns
 from gordon_janitor_gcp.plugins import reconciler
 

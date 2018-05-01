@@ -15,7 +15,7 @@
 # limitations under the License.
 
 __all__ = (
-    'GCPGordonJanitorError', 'GCPAuthError', 'GCPHTTPError', 'GCPConfigError'
+    'GCPGordonJanitorError', 'GCPConfigError'
 )
 
 
@@ -23,14 +23,6 @@ __all__ = (
 #       the core janitor package
 class GCPGordonJanitorError(Exception):
     """Tmp base exception until gordon_janitor has exceptions"""
-
-
-class GCPAuthError(GCPGordonJanitorError):
-    """Authentication error with Google Cloud."""
-
-
-class GCPHTTPError(GCPGordonJanitorError):
-    """An HTTP error occured."""
 
 
 class GCPConfigError(GCPGordonJanitorError):

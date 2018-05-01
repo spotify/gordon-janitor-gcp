@@ -64,10 +64,10 @@ import zope.interface
 from asyncio_extras import threads
 from google.api_core import exceptions as google_exceptions
 from google.cloud import pubsub
+from gordon_gcp.clients import auth
 from gordon_janitor import interfaces
 
 from gordon_janitor_gcp import exceptions
-from gordon_janitor_gcp.clients import auth
 
 
 __all__ = ('GPubsubPublisher',)

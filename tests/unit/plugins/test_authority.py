@@ -15,6 +15,8 @@
 # limitations under the License.
 
 import asyncio
+import copy
+import logging
 
 import pytest
 
@@ -31,11 +33,12 @@ def echoing_helper_coro(data):
 
 @pytest.fixture
 def fake_authority(mocker, monkeypatch, authority_config, auth_client):
-    monkeypatch.setattr('gordon_janitor_gcp.plugins.auth.GAuthClient',
-                        mocker.Mock(return_value=auth_client))
+    monkeypatch.setattr(
+        'gordon_janitor_gcp.plugins.authority.auth.GAuthClient',
+        mocker.Mock(return_value=auth_client))
     rrset_channel = asyncio.Queue()
     fake_authority = authority.GCEAuthority(
-        authority_config, rrset_channel)
+        authority_config, None, rrset_channel)
     fake_authority.session = auth_client._session
     return fake_authority
 
@@ -57,7 +60,7 @@ async def test_builder_creates_proper_authority(mocker, authority_config):
     authority_mod_patch = 'gordon_janitor_gcp.clients.'
     mocker.patch(authority_mod_patch + 'gcrm.GCRMClient', crm_client)
     mocker.patch(authority_mod_patch + 'gce.GCEClient', gce_client)
-    mocker.patch(authority_mod_patch + 'auth.GAuthClient', auth_client)
+    mocker.patch('gordon_gcp.clients.auth.GAuthClient', auth_client)
 
     rrset_channel = asyncio.Queue()
     kwargs = {'other': 'kwargs'}
@@ -93,13 +96,14 @@ async def test_builder_creates_proper_authority(mocker, authority_config):
 
 @pytest.mark.asyncio
 async def test_run_publishes_msg_to_channel(mocker, authority_config,
-                                            get_gce_client, create_mock_coro):
-    instance_data = []
+                                            get_gce_client, create_mock_coro,
+                                            instance_data):
+    instances = []
     for i in range(1, 4):
-        instance_data.append({
-            'hostname': f'host-{i}',
-            'internal_ip': f'192.168.1.{i}',
-            'external_ip': f'1.1.1.{i}'})
+        inst = copy.deepcopy(instance_data)
+        inst['name'] = f'host-{i}'
+        inst['networkInterfaces'][0]['accessConfigs'][0]['natIp'] = f'1.1.1.{i}'
+        instances.append(inst)
 
     active_projects_mock, active_projects_coro = create_mock_coro()
     active_projects_mock.return_value = [{'projectId': 1}, {'projectId': 2}]
@@ -107,7 +111,7 @@ async def test_run_publishes_msg_to_channel(mocker, authority_config,
     crm_client.list_all_active_projects = active_projects_coro
 
     list_instances_mock, list_instances_coro = create_mock_coro()
-    list_instances_mock.return_value = instance_data
+    list_instances_mock.return_value = instances
     gce_client = get_gce_client(gce.GCEClient)
     gce_client.list_instances = list_instances_coro
 
@@ -118,14 +122,15 @@ async def test_run_publishes_msg_to_channel(mocker, authority_config,
     await gce_authority.run()
 
     _expected_rrsets = []
-    for instance in instance_data:
+    for instance in instances:
+        ip = instance['networkInterfaces'][0]['accessConfigs'][0]['natIP']
         _expected_rrsets.append({
-            'name': instance['hostname'],
+            'name': instance['name'],
             'type': 'A',
-            'rrdatas': [instance['external_ip']]})
+            'rrdatas': [ip]})
     expected_rrsets = _expected_rrsets * 2
     expected_msg = {
-        'zone': authority_config['zone'],
+        'zone': authority_config['dns_zone'],
         'rrsets': expected_rrsets
     }
 
@@ -133,3 +138,12 @@ async def test_run_publishes_msg_to_channel(mocker, authority_config,
     assert expected_msg == (await rrset_channel.get())
     # run also calls self.cleanup at the end
     assert (await rrset_channel.get()) is None
+
+
+def test_create_msgs_bad_json(caplog, fake_authority):
+    """Authority ignores incomplete instance data."""
+    caplog.set_level(logging.WARN)
+    partial_instance = {'name': 'incomplete-instance-1'}
+    results = fake_authority._create_msgs([partial_instance])
+    assert [] == results
+    assert 1 == len(caplog.records)

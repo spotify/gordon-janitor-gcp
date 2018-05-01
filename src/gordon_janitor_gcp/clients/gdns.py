@@ -48,8 +48,7 @@ To use:
 import logging
 
 import attr
-
-from gordon_janitor_gcp.clients import http
+from gordon_gcp.clients import http
 
 
 __all__ = ('GCPResourceRecordSet', 'GDNSClient',)

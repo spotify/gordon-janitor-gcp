@@ -20,8 +20,8 @@ import aiohttp
 import attr
 import pytest
 from aioresponses import aioresponses
+from gordon_gcp.clients import auth
 
-from gordon_janitor_gcp.clients import auth
 from gordon_janitor_gcp.clients import gdns
 
 
