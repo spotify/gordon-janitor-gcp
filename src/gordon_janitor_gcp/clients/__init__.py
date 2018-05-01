@@ -15,17 +15,13 @@
 # limitations under the License.
 
 # Mainly for easier documentation reading
-from gordon_janitor_gcp.clients.auth import *  # noqa: F403
 from gordon_janitor_gcp.clients.gce import *  # noqa: F403
 from gordon_janitor_gcp.clients.gcrm import *  # noqa: F403
 from gordon_janitor_gcp.clients.gdns import *  # noqa: F403
-from gordon_janitor_gcp.clients.http import *  # noqa: F403
 
 
 __all__ = (
-    auth.__all__ +  # noqa: F405
     gce.__all__ +  # noqa: F405
     gcrm.__all__ +  # noqa: F405
-    gdns.__all__ +  # noqa: F405
-    http.__all__  # noqa: F405
+    gdns.__all__  # noqa: F405
 )

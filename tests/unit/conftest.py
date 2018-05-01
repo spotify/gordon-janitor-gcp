@@ -24,8 +24,7 @@ import logging
 import aiohttp
 import pytest
 from google.cloud import pubsub
-
-from gordon_janitor_gcp.clients import auth
+from gordon_gcp.clients import auth
 
 
 API_BASE_URL = 'https://example.com'

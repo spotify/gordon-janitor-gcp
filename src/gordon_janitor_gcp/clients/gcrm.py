@@ -45,14 +45,15 @@ To use:
     #   'external_ip': '192.168.1.10'}]
 """
 
-from gordon_janitor_gcp.clients import http
+from gordon_gcp.clients import http
+
+from gordon_janitor_gcp.clients import _utils
 
 
 __all__ = ('GCRMClient',)
 
 
-class GCRMClient(http.AIOConnection,
-                 http.GPaginatorMixin):
+class GCRMClient(http.AIOConnection, _utils.GPaginatorMixin):
     """Async client to interact with Google Cloud Resource Manager API.
 
     You can find the endpoint documentation `here <https://cloud.google.
