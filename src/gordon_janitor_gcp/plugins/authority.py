@@ -90,7 +90,7 @@ class GCEAuthorityBuilder:
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
         if not self.config.get('dns_zone'):
-            msg = ('The DNS zone name, i.e. "example.com", is required to '
+            msg = ('The absolute DNS zone, i.e. "example.com.", is required to '
                    'identify to which zone generated records should belong.')
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)

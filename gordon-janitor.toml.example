@@ -18,7 +18,7 @@ topic = "dns-changes-topic"
 [gcp.gce]
 keyfile = "/path/to/crm-service-account.json"
 scopes = ["cloud-platform"]
-dns_zone = "example.com"
+dns_zone = "example.com."
 metadata_blacklist = [["key", "val"], ["other_key", "other_val"]]
 tag_blacklist = []
 project_blacklist = []

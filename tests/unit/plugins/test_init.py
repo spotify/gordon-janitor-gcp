@@ -164,7 +164,7 @@ async def test_get_authority(authority_config, auth_client):
 
 @pytest.mark.parametrize('config_key,error_msg', [
     ('keyfile', 'The path to a Service Account JSON keyfile is required '),
-    ('dns_zone', 'The DNS zone name, i.e. "example.com", is required to ')])
+    ('dns_zone', 'The absolute DNS zone, i.e. "example.com.", is required ')])
 def test_get_authority_config_raises(caplog, config_key, error_msg,
                                      authority_config, auth_client):
     """Raise with bad configuration."""
