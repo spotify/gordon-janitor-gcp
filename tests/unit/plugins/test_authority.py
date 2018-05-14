@@ -125,7 +125,7 @@ async def test_run_publishes_msg_to_channel(mocker, authority_config,
     for instance in instances:
         ip = instance['networkInterfaces'][0]['accessConfigs'][0]['natIP']
         _expected_rrsets.append({
-            'name': instance['name'],
+            'name': f"{instance['name']}.{authority_config['dns_zone']}",
             'type': 'A',
             'rrdatas': [ip]})
     expected_rrsets = _expected_rrsets * 2

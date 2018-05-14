@@ -145,8 +145,9 @@ class GCEAuthority:
 
     def _create_instance_rrset(self, instance):
         ip = instance['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+        fqdn = f"{instance['name']}.{self.config['dns_zone']}"
         return {
-            'name': instance['name'],
+            'name': fqdn,
             'type': 'A',
             'rrdatas': [ip]
         }
