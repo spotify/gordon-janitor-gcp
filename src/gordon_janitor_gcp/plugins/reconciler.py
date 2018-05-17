@@ -106,7 +106,7 @@ class GDNSReconcilerBuilder:
     def _init_client(self, auth_client):
         kwargs = {
             'project': self.config['project'],
-            'api_version': self.config.get('api_version'),
+            'api_version': self.config.get('api_version', 'v1'),
             'auth_client': auth_client
         }
         return gdns.GDNSClient(**kwargs)
@@ -216,16 +216,19 @@ class GDNSReconciler:
             }
             # TODO (lynn): add metrics.incr call here once aioshumway is
             #              released
-            logging.debug('Creating the following change message: {msg}')
+            logging.debug(f'Creating the following change message: {msg}')
             await self.changes_channel.put(msg)
 
         logging.info(f'Created {len(desired_rrsets)} change messages.')
+
+    def _zone_to_managed_zone(self, zone):
+        return zone.replace('.', '-')[:-1]
 
     def _parse_rrset_message(self, message):
         # assert that keys 'zone' and 'rrsets' are present, and return
         # values for each
         try:
-            zone = message['zone']
+            zone = self._zone_to_managed_zone(message['zone'])
         except KeyError:
             msg = (f'No zone was defined in the given message: {message}.')
             logging.error(msg)
