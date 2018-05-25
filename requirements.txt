@@ -5,5 +5,5 @@ google-api-core==0.1.4
 google-auth==1.3.0
 google-cloud-pubsub==0.30.1
 gordon-dns-gcp==0.0.1.dev2
-gordon-janitor==0.0.1.dev3
+gordon-janitor==0.0.1.dev4
 zope.interface==4.4.3
