@@ -1,6 +1,16 @@
 Changelog
 =========
 
+0.0.1.dev3 (2018-05-25)
+-----------------------
+
+Changes
+~~~~~~~
+
+- Changed `dns_zone` configuration key format to one used by Gordon (core) plugins.
+- Changed Authority EventMessages to use FQDNs.
+
+
 0.0.1.dev2 (2018-05-01)
 -----------------------
 
