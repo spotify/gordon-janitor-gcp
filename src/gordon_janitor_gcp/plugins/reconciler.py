@@ -106,7 +106,7 @@ class GDNSReconcilerBuilder:
     def _init_client(self, auth_client):
         kwargs = {
             'project': self.config['project'],
-            'api_version': self.config.get('api_version'),
+            'api_version': self.config.get('api_version', 'v1'),
             'auth_client': auth_client
         }
         return gdns.GDNSClient(**kwargs)
@@ -216,7 +216,7 @@ class GDNSReconciler:
             }
             # TODO (lynn): add metrics.incr call here once aioshumway is
             #              released
-            logging.debug('Creating the following change message: {msg}')
+            logging.debug(f'Creating the following change message: {msg}')
             await self.changes_channel.put(msg)
 
         logging.info(f'Created {len(desired_rrsets)} change messages.')

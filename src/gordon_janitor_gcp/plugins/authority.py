@@ -90,7 +90,7 @@ class GCEAuthorityBuilder:
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
         if not self.config.get('dns_zone'):
-            msg = ('The DNS zone name, i.e. "example.com", is required to '
+            msg = ('The absolute DNS zone, i.e. "example.com.", is required to '
                    'identify to which zone generated records should belong.')
             logging.error(msg)
             raise exceptions.GCPConfigError(msg)
@@ -145,8 +145,9 @@ class GCEAuthority:
 
     def _create_instance_rrset(self, instance):
         ip = instance['networkInterfaces'][0]['accessConfigs'][0]['natIP']
+        fqdn = f"{instance['name']}.{self.config['dns_zone']}"
         return {
-            'name': instance['name'],
+            'name': fqdn,
             'type': 'A',
             'rrdatas': [ip]
         }
