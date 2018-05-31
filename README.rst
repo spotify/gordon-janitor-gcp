@@ -1,3 +1,9 @@
+======================================
+****** THIS REPO IS DEPRECATED. ******
+======================================
+
+It was merged into `gordon-gcp`_ on 5/30/18.
+
 ============================================================================
 ``gordon-janitor-gcp``: GCP Plugin for the Reconciliation Service for Gordon
 ============================================================================
@@ -96,3 +102,4 @@ This project adheres to the `Open Code of Conduct`_. By participating, you are e
 .. _`gordon`: https://github.com/spotify/gordon
 .. _`gordon-janitor`: https://github.com/spotify/gordon-janitor
 .. _`documentation`: https://cloud.google.com/iam/docs/creating-managing-service-account-keys
+.. _`gordon-gcp`: https://github.com/spotify/gordon-gcp
