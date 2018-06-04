@@ -87,6 +87,7 @@ setup(
     version=find_meta('version'),
     license=find_meta('license'),
     description=find_meta('description'),
+    long_description=read('README.rst', 'CHANGELOG.rst'),
     url=find_meta('uri'),
     author=find_meta('author'),
     author_email=find_meta('email'),
