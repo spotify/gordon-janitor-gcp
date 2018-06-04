@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.0.1.dev4 (2018-06-04)
+-----------------------
+
+Changes
+~~~~~~~
+
+- Deprecated the repo (moved into `gordon-gcp`_).
+
+
 0.0.1.dev3 (2018-05-25)
 -----------------------
 
@@ -29,3 +38,7 @@ Changes
 ~~~~~~~
 
 Initial development release.
+
+
+
+.. _`gordon-gcp`: https://github.com/spotify/gordon-gcp
